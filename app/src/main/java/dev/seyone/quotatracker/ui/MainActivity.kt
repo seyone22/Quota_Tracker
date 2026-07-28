@@ -1,0 +1,220 @@
+package dev.seyone.quotatracker.ui
+
+import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import dev.seyone.quotatracker.QuotaApplication
+import dev.seyone.quotatracker.data.backup.DataBackupManager
+import dev.seyone.quotatracker.ui.dashboard.DashboardScreen
+import dev.seyone.quotatracker.ui.dashboard.QuotaDashboardViewModel
+import dev.seyone.quotatracker.ui.history.HistoryScreen
+import dev.seyone.quotatracker.ui.history.HistoryViewModel
+import dev.seyone.quotatracker.ui.settings.SettingsScreen
+import dev.seyone.quotatracker.ui.settings.SettingsViewModel
+import dev.seyone.quotatracker.ui.theme.QuotaTrackerTheme
+import kotlinx.coroutines.launch
+
+class MainActivity : ComponentActivity() {
+
+    private val dashboardViewModel: QuotaDashboardViewModel by viewModels {
+        QuotaDashboardViewModel.Factory((application as QuotaApplication).repository)
+    }
+
+    private val historyViewModel: HistoryViewModel by viewModels {
+        HistoryViewModel.Factory(
+            (application as QuotaApplication).database,
+            (application as QuotaApplication).repository
+        )
+    }
+
+    private val settingsViewModel: SettingsViewModel by viewModels {
+        SettingsViewModel.Factory((application as QuotaApplication).settingsRepository)
+    }
+
+    private val backupManager by lazy {
+        DataBackupManager(this, (application as QuotaApplication).database)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        setContent {
+            val settingsRepository = (application as QuotaApplication).settingsRepository
+            val themeMode by settingsRepository.themeMode.collectAsState(initial = "SYSTEM")
+
+            QuotaTrackerTheme(themeMode = themeMode) {
+                val scope = rememberCoroutineScope()
+                val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
+
+                val exportJsonLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("application/json")
+                ) { uri ->
+                    uri?.let {
+                        scope.launch {
+                            val result = backupManager.exportBackup(it)
+                            if (result.isSuccess) {
+                                Toast.makeText(this@MainActivity, "JSON backup exported!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(this@MainActivity, "JSON export failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+
+                val importJsonLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.OpenDocument()
+                ) { uri ->
+                    uri?.let {
+                        scope.launch {
+                            val result = backupManager.importBackup(it)
+                            if (result.isSuccess) {
+                                Toast.makeText(this@MainActivity, "JSON backup restored!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(this@MainActivity, "JSON restore failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+
+                val exportCsvLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("text/csv")
+                ) { uri ->
+                    uri?.let {
+                        scope.launch {
+                            val result = backupManager.exportCsv(it)
+                            if (result.isSuccess) {
+                                Toast.makeText(this@MainActivity, "CSV exported successfully!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(this@MainActivity, "CSV export failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+
+                val exportCsvAnalyticsLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.CreateDocument("text/csv")
+                ) { uri ->
+                    uri?.let {
+                        scope.launch {
+                            val result = backupManager.generateCsvAnalyticsReport(it)
+                            if (result.isSuccess) {
+                                Toast.makeText(this@MainActivity, "CSV Analytics exported!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(this@MainActivity, "CSV Analytics export failed", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+
+                Scaffold(
+                    bottomBar = {
+                        NavigationBar {
+                            NavigationBarItem(
+                                selected = currentRoute == "dashboard",
+                                onClick = {
+                                    if (currentRoute != "dashboard") {
+                                        navController.navigate("dashboard") {
+                                            popUpTo("dashboard") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                },
+                                icon = { Icon(Icons.Outlined.Dashboard, contentDescription = "Dashboard") },
+                                label = { Text("Dashboard") }
+                            )
+                            NavigationBarItem(
+                                selected = currentRoute == "history",
+                                onClick = {
+                                    if (currentRoute != "history") {
+                                        navController.navigate("history") {
+                                            popUpTo("dashboard") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                },
+                                icon = { Icon(Icons.Outlined.History, contentDescription = "History") },
+                                label = { Text("History") }
+                            )
+                            NavigationBarItem(
+                                selected = currentRoute == "settings",
+                                onClick = {
+                                    if (currentRoute != "settings") {
+                                        navController.navigate("settings") {
+                                            popUpTo("dashboard") { saveState = true }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                },
+                                icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = "Settings") },
+                                label = { Text("Settings") }
+                            )
+                        }
+                    }
+                ) { innerPadding ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = innerPadding.calculateBottomPadding()),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        NavHost(
+                            navController = navController,
+                            startDestination = "dashboard"
+                        ) {
+                            composable("dashboard") {
+                                DashboardScreen(viewModel = dashboardViewModel)
+                            }
+                            composable("history") {
+                                HistoryScreen(viewModel = historyViewModel, topBarActions = {})
+                            }
+                            composable("settings") {
+                                SettingsScreen(
+                                    viewModel = settingsViewModel,
+                                    onExportJsonClick = { exportJsonLauncher.launch("quota_tracker_backup.json") },
+                                    onImportJsonClick = { importJsonLauncher.launch(arrayOf("application/json")) },
+                                    onExportCsvClick = { exportCsvLauncher.launch("quota_tracker_logs.csv") },
+                                    onExportCsvAnalyticsClick = { exportCsvAnalyticsLauncher.launch("quota_tracker_analytics.csv") },
+                                    onForceWearSyncClick = {
+                                        (application as QuotaApplication).wearSyncBroadcaster.startSync()
+                                        Toast.makeText(this@MainActivity, "Wear OS state sync triggered!", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
