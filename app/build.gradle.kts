@@ -35,8 +35,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // The deprecated kotlinOptions block has been removed from here.
-
     buildFeatures {
         compose = true
     }
@@ -47,7 +45,6 @@ android {
     }
 }
 
-// [NEW] Modern Kotlin compiler options DSL
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -66,6 +63,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3.window.size)
+    implementation(libs.androidx.material3.adaptive.navigation.suite)
+    implementation(libs.androidx.adaptive)
+    implementation(libs.androidx.adaptive.layout)
+    implementation(libs.androidx.adaptive.navigation)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 

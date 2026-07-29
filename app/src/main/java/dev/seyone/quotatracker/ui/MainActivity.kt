@@ -20,11 +20,12 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,6 +34,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import dev.seyone.quotatracker.QuotaApplication
 import dev.seyone.quotatracker.data.backup.DataBackupManager
 import dev.seyone.quotatracker.ui.dashboard.DashboardScreen
@@ -80,6 +83,7 @@ class MainActivity : ComponentActivity() {
         DataBackupManager(this, (application as QuotaApplication).database)
     }
 
+    @OptIn(ExperimentalMaterial3AdaptiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -93,6 +97,21 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
+
+                val subPageRoutes = setOf("onboarding", "adjust_baseline", "data_storage", "about")
+                val adaptiveInfo = currentWindowAdaptiveInfo()
+                val windowSizeClass = adaptiveInfo.windowSizeClass
+                val isLandscape = windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
+                val isMediumWidth = windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.MEDIUM
+                val isExpandedWidth = windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
+
+                val navSuiteType = when {
+                    currentRoute in subPageRoutes -> NavigationSuiteType.None
+                    isLandscape -> NavigationSuiteType.NavigationRail
+                    isMediumWidth -> NavigationSuiteType.NavigationRail
+                    isExpandedWidth -> NavigationSuiteType.NavigationDrawer
+                    else -> NavigationSuiteType.NavigationBar
+                }
 
                 val exportJsonLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.CreateDocument("application/json")
@@ -154,60 +173,55 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                Scaffold(
-                    bottomBar = {
-                        if (currentRoute != "onboarding" && currentRoute != "adjust_baseline" && currentRoute != "data_storage" && currentRoute != "about") {
-                            NavigationBar {
-                                NavigationBarItem(
-                                    selected = currentRoute == "dashboard",
-                                    onClick = {
-                                        if (currentRoute != "dashboard") {
-                                            navController.navigate("dashboard") {
-                                                popUpTo("dashboard") { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Outlined.Dashboard, contentDescription = "Dashboard") },
-                                    label = { Text("Dashboard") }
-                                )
-                                NavigationBarItem(
-                                    selected = currentRoute == "history",
-                                    onClick = {
-                                        if (currentRoute != "history") {
-                                            navController.navigate("history") {
-                                                popUpTo("dashboard") { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Outlined.History, contentDescription = "History") },
-                                    label = { Text("History") }
-                                )
-                                NavigationBarItem(
-                                    selected = currentRoute == "settings",
-                                    onClick = {
-                                        if (currentRoute != "settings") {
-                                            navController.navigate("settings") {
-                                                popUpTo("dashboard") { saveState = true }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = "Settings") },
-                                    label = { Text("Settings") }
-                                )
-                            }
-                        }
+                NavigationSuiteScaffold(
+                    layoutType = navSuiteType,
+                    navigationSuiteItems = {
+                        item(
+                            selected = currentRoute == "dashboard",
+                            onClick = {
+                                if (currentRoute != "dashboard") {
+                                    navController.navigate("dashboard") {
+                                        popUpTo("dashboard") { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(Icons.Outlined.Dashboard, contentDescription = "Dashboard") },
+                            label = { Text("Dashboard") }
+                        )
+                        item(
+                            selected = currentRoute == "history",
+                            onClick = {
+                                if (currentRoute != "history") {
+                                    navController.navigate("history") {
+                                        popUpTo("dashboard") { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(Icons.Outlined.History, contentDescription = "History") },
+                            label = { Text("History") }
+                        )
+                        item(
+                            selected = currentRoute == "settings",
+                            onClick = {
+                                if (currentRoute != "settings") {
+                                    navController.navigate("settings") {
+                                        popUpTo("dashboard") { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = "Settings") },
+                            label = { Text("Settings") }
+                        )
                     }
-                ) { innerPadding ->
+                ) {
                     Surface(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(bottom = innerPadding.calculateBottomPadding()),
+                        modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
                         NavHost(

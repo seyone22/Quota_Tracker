@@ -26,6 +26,9 @@ interface LogEntryDao {
     @Query("DELETE FROM log_entries WHERE id IN (:ids)")
     suspend fun deleteLogsByIds(ids: List<Long>)
 
+    @Query("DELETE FROM log_entries WHERE quotaId = :quotaId")
+    suspend fun deleteLogsForQuota(quotaId: Int)
+
     @Query("SELECT * FROM log_entries WHERE quotaId = :quotaId ORDER BY timestamp DESC")
     fun getLogsForQuota(quotaId: Int): Flow<List<LogEntryEntity>>
 

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,11 +20,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
@@ -32,7 +39,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,6 +50,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.seyone.quotatracker.ui.components.QuotaIconRegistry
 import dev.seyone.quotatracker.ui.dashboard.QuotaUiItem
 import dev.seyone.quotatracker.ui.theme.CompletedGreenContainer
 import dev.seyone.quotatracker.ui.theme.CompletedGreenProgress
@@ -52,9 +62,12 @@ fun QuotaCard(
     item: QuotaUiItem,
     onQuickLog: (Int) -> Unit,
     onLongPress: () -> Unit,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isCompleted = item.isCompleted
+    var showMenu by remember { mutableStateOf(false) }
 
     val scale = remember { Animatable(1f) }
 
@@ -95,7 +108,7 @@ fun QuotaCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Header Row: Title, Reset Strategy badge, Pin Icon, Checkmark
+            // Header Row: Title, Reset Strategy badge, Pin Icon, Checkmark, Three-dot Menu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -105,6 +118,15 @@ fun QuotaCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
+                    val quotaIcon = QuotaIconRegistry.getIcon(item.quota.iconKey)
+                    if (quotaIcon != null) {
+                        Icon(
+                            imageVector = quotaIcon,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(20.dp).padding(end = 6.dp)
+                        )
+                    }
                     Text(
                         text = item.quota.title,
                         style = MaterialTheme.typography.titleMedium,
@@ -128,7 +150,7 @@ fun QuotaCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = contentColor.copy(alpha = 0.7f),
                         fontSize = 10.sp,
-                        modifier = Modifier.padding(end = 8.dp)
+                        modifier = Modifier.padding(end = 4.dp)
                     )
 
                     if (isCompleted) {
@@ -136,8 +158,61 @@ fun QuotaCard(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Completed",
                             tint = CompletedGreenProgress,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(20.dp)
                         )
+                    }
+
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More Options",
+                                tint = contentColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Edit Quota"
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onEdit()
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Delete",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete Quota",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onDelete()
+                                }
+                            )
+                        }
                     }
                 }
             }

@@ -14,22 +14,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.outlined.HourglassEmpty
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -37,8 +42,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,12 +66,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import dev.seyone.quotatracker.ui.dashboard.components.AddEditQuotaBottomSheet
 import dev.seyone.quotatracker.ui.dashboard.components.ManualOverrideBottomSheet
 import dev.seyone.quotatracker.ui.dashboard.components.QuotaCard
 import dev.seyone.quotatracker.ui.dashboard.components.WeekPulseCard
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3AdaptiveApi::class
+)
 @Composable
 fun DashboardScreen(
     viewModel: QuotaDashboardViewModel,
@@ -69,11 +85,21 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val showAddDialog by viewModel.showAddDialog.collectAsState()
+    val editQuotaTarget by viewModel.editQuotaTarget.collectAsState()
+    val deleteQuotaTarget by viewModel.deleteQuotaTarget.collectAsState()
     val manualOverrideItem by viewModel.manualOverrideQuota.collectAsState()
 
     var showFabTooltip by remember { mutableStateOf(true) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+
+    val windowSizeClass = androidx.compose.material3.adaptive.currentWindowAdaptiveInfo().windowSizeClass
+    val isLandscape = windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
+    val isTabletOrLandscape = isLandscape || windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.MEDIUM || windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
+    val gridColumnCount = if (isTabletOrLandscape) 2 else 1
+
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    val navigator = rememberListDetailPaneScaffoldNavigator<Any>()
 
     LaunchedEffect(viewModel) {
         viewModel.uiEvents.collect { event ->
@@ -101,20 +127,23 @@ fun DashboardScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MediumFlexibleTopAppBar(
+            TopAppBar(
                 title = {
                     Text(
                         text = "Quota Tracker",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 },
                 actions = { topBarActions() },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.mediumTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                windowInsets = if (isTabletOrLandscape) androidx.compose.foundation.layout.WindowInsets(0.dp) else TopAppBarDefaults.windowInsets,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                ),
+                scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
@@ -123,103 +152,173 @@ fun DashboardScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Quota"
-                )
+                Icon(Icons.Default.Add, contentDescription = "Add Quota")
             }
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else if (uiState.quotaItems.isEmpty()) {
-                EmptyState(
-                    onAddClick = { viewModel.showAddDialog.value = true },
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+        ListDetailPaneScaffold(
+            directive = navigator.scaffoldDirective,
+            value = navigator.scaffoldValue,
+            listPane = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) {
-                    uiState.pulseData?.let { pulse ->
-                        item(key = "week_pulse_card") {
-                            WeekPulseCard(pulseData = pulse)
-                        }
-                    }
-
-                    items(
-                        items = uiState.quotaItems,
-                        key = { it.quota.id }
-                    ) { item ->
-                        QuotaCard(
-                            item = item,
-                            onQuickLog = { minutes ->
-                                viewModel.onQuickLog(item, minutes)
-                            },
-                            onLongPress = {
-                                viewModel.onLongPressCard(item)
-                            },
-                            modifier = Modifier.animateItem()
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    } else if (uiState.quotaItems.isEmpty()) {
+                        EmptyState(
+                            onAddClick = { viewModel.showAddDialog.value = true },
+                            modifier = Modifier.align(Alignment.Center)
                         )
-                    }
-                }
-
-                // Progressive Tooltip Guidance Overlay
-                if (showFabTooltip) {
-                    Popup(
-                        alignment = Alignment.BottomEnd,
-                        onDismissRequest = { showFabTooltip = false },
-                        properties = PopupProperties(dismissOnClickOutside = false)
-                    ) {
-                        Card(
-                            modifier = Modifier
-                                .padding(bottom = 88.dp, end = 16.dp, start = 32.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.inverseSurface
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                    } else {
+                        LazyVerticalStaggeredGrid(
+                            columns = StaggeredGridCells.Fixed(gridColumnCount),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalItemSpacing = 12.dp
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = "💡 Tap + to add quotas, or tap cards to log time!",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.inverseOnSurface,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                TextButton(
-                                    onClick = { showFabTooltip = false },
-                                    contentPadding = PaddingValues(0.dp)
+                            uiState.pulseData?.let { pulse ->
+                                item(
+                                    key = "week_pulse_card",
+                                    span = StaggeredGridItemSpan.FullLine
                                 ) {
-                                    Text("Got it", color = MaterialTheme.colorScheme.inversePrimary)
+                                    WeekPulseCard(pulseData = pulse)
+                                }
+                            }
+
+                            items(
+                                items = uiState.quotaItems,
+                                key = { it.quota.id }
+                            ) { item ->
+                                QuotaCard(
+                                    item = item,
+                                    onQuickLog = { minutes ->
+                                        viewModel.onQuickLog(item, minutes)
+                                    },
+                                    onLongPress = {
+                                        viewModel.onSubtractLog(item)
+                                    },
+                                    onEdit = {
+                                        viewModel.onRequestEditQuota(item.quota)
+                                    },
+                                    onDelete = {
+                                        viewModel.onRequestDeleteQuota(item)
+                                    },
+                                    modifier = Modifier.animateItem()
+                                )
+                            }
+                        }
+
+                        // Progressive Tooltip Guidance Overlay with Width Constraint & Dynamic Offset
+                        if (showFabTooltip) {
+                            val tooltipBottomPadding = if (isLandscape) 20.dp else 88.dp
+                            Popup(
+                                alignment = Alignment.BottomEnd,
+                                onDismissRequest = { showFabTooltip = false },
+                                properties = PopupProperties(dismissOnClickOutside = false)
+                            ) {
+                                Card(
+                                    modifier = Modifier
+                                        .padding(bottom = tooltipBottomPadding, end = 16.dp, start = 32.dp)
+                                        .widthIn(max = 400.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.inverseSurface
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = "💡 Tap + to add quotas, or tap cards to log time!",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.inverseOnSurface,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TextButton(
+                                            onClick = { showFabTooltip = false },
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("Got it", color = MaterialTheme.colorScheme.inversePrimary)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            },
+            detailPane = {
+                // Placeholder Detail Pane for future Quota Insights & Editing
             }
-        }
+        )
 
-        // Modal Bottom Sheets
+        // Modal Bottom Sheets & Smart Delete Dialog
         if (showAddDialog) {
             AddEditQuotaBottomSheet(
+                quotaToEdit = null,
                 onDismiss = { viewModel.showAddDialog.value = false },
-                onConfirm = { title, h, m, resetStrategy, isPinned ->
-                    viewModel.onAddQuota(title, h, m, resetStrategy, isPinned)
+                onConfirm = { quotaId, title, h, m, resetStrategy, isPinned, iconKey ->
+                    viewModel.onSaveQuota(quotaId, title, h, m, resetStrategy, isPinned, iconKey)
+                }
+            )
+        }
+
+        editQuotaTarget?.let { target ->
+            AddEditQuotaBottomSheet(
+                quotaToEdit = target,
+                onDismiss = { viewModel.onDismissEditDialog() },
+                onConfirm = { quotaId, title, h, m, resetStrategy, isPinned, iconKey ->
+                    viewModel.onSaveQuota(quotaId, title, h, m, resetStrategy, isPinned, iconKey)
+                }
+            )
+        }
+
+        deleteQuotaTarget?.let { item ->
+            var deleteHistory by remember { mutableStateOf(false) }
+
+            AlertDialog(
+                onDismissRequest = { viewModel.onDismissDeleteDialog() },
+                title = { Text("Delete Quota?") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("This will remove the quota from your active week.")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = deleteHistory,
+                                onCheckedChange = { deleteHistory = it }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Delete all historical time logs as well.",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { viewModel.onConfirmDeleteQuota(deleteHistory) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.onDismissDeleteDialog() }) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
@@ -237,65 +336,54 @@ fun DashboardScreen(
 }
 
 @Composable
-fun EmptyState(
+private fun EmptyState(
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(24.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        )
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier.padding(28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.HourglassEmpty,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Your week is a blank slate.",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+            Icon(
+                imageVector = Icons.Outlined.HourglassEmpty,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(36.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Add a quota to start tracking what truly matters to you.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            Button(
-                onClick = onAddClick,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Create Quota", fontWeight = FontWeight.Bold)
-            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "No Quotas Yet",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Set weekly time goals for your hobbies, studies, or habits.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(onClick = onAddClick) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Create Your First Quota")
         }
     }
 }

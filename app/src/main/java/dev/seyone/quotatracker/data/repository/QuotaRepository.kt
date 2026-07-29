@@ -19,7 +19,7 @@ class QuotaRepository(
 
     /**
      * Returns a Flow of QuotaWithProgress for the current week starting Mon 00:00 to Sun 23:59,
-     * ensuring loggedMinutes is never negative.
+     * ensuring loggedMinutes is never negative and omitting archived quotas.
      */
     fun getQuotasWithCurrentWeekProgress(
         nowTimestamp: Long = System.currentTimeMillis()
@@ -108,6 +108,21 @@ class QuotaRepository(
 
     suspend fun updateQuota(quota: QuotaEntity) {
         quotaDao.updateQuota(quota)
+    }
+
+    /**
+     * Soft delete: mark isArchived = true so quota is removed from active week but historical logs remain intact.
+     */
+    suspend fun archiveQuota(quotaId: Int) {
+        quotaDao.archiveQuota(quotaId)
+    }
+
+    /**
+     * Hard delete: completely delete the quota and all associated time logs from database.
+     */
+    suspend fun hardDeleteQuota(quotaId: Int) {
+        logEntryDao.deleteLogsForQuota(quotaId)
+        quotaDao.deleteQuotaById(quotaId)
     }
 
     suspend fun deleteQuota(quota: QuotaEntity) {

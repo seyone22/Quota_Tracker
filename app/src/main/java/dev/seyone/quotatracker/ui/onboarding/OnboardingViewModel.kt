@@ -32,10 +32,11 @@ class OnboardingViewModel(
             val existingQuotas = quotaRepository.getQuotasWithCurrentWeekProgress().firstOrNull()
             if (existingQuotas.isNullOrEmpty()) {
                 val sampleQuota = QuotaEntity(
-                    title = "📖 Reading",
+                    title = "Reading",
                     targetMinutes = 120, // 2 hours/week
                     resetStrategy = ResetStrategy.CLEAN,
-                    isPinned = true
+                    isPinned = true,
+                    iconKey = "book"
                 )
                 quotaRepository.addQuota(sampleQuota)
             }

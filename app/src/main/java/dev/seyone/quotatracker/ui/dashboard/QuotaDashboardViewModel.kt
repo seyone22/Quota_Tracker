@@ -7,17 +7,17 @@ import dev.seyone.quotatracker.data.local.entity.QuotaEntity
 import dev.seyone.quotatracker.data.local.model.QuotaWithProgress
 import dev.seyone.quotatracker.data.model.ResetStrategy
 import dev.seyone.quotatracker.data.repository.QuotaRepository
+import dev.seyone.quotatracker.ui.dashboard.components.WeekPulseData
 import dev.seyone.quotatracker.util.WeekUtils
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import dev.seyone.quotatracker.ui.dashboard.components.WeekPulseData
 import java.time.LocalDate
 import java.util.Locale
 
@@ -51,6 +51,8 @@ class QuotaDashboardViewModel(
 
     // Dialog State Controls
     val showAddDialog = MutableStateFlow(false)
+    val editQuotaTarget = MutableStateFlow<QuotaEntity?>(null)
+    val deleteQuotaTarget = MutableStateFlow<QuotaUiItem?>(null)
     val manualOverrideQuota = MutableStateFlow<QuotaUiItem?>(null)
 
     val uiState: StateFlow<DashboardUiState> = repository.getQuotasWithCurrentWeekProgress()
@@ -125,18 +127,13 @@ class QuotaDashboardViewModel(
     fun onUndoLog(logIds: List<Long>) {
         viewModelScope.launch {
             repository.undoLogEntries(logIds)
-            _uiEvents.emit(DashboardUiEvent.ShowMessage("Reverted time entry"))
         }
     }
 
-    fun onLongPressCard(item: QuotaUiItem) {
-        if (item.isCompleted) {
-            // Completed card long-press triggers manual override dialog
-            manualOverrideQuota.value = item
-        } else {
-            // Unfinished card long-press triggers -15m undo/subtract directly
-            viewModelScope.launch {
-                val ids = repository.subtractLog(item.quota.id, 15)
+    fun onSubtractLog(item: QuotaUiItem) {
+        viewModelScope.launch {
+            val ids = repository.subtractLog(item.quota.id, 15)
+            if (ids.isNotEmpty()) {
                 _uiEvents.emit(
                     DashboardUiEvent.ShowUndoSnackbar(
                         message = "Removed -15m from ${item.quota.title}",
@@ -147,25 +144,89 @@ class QuotaDashboardViewModel(
         }
     }
 
+    fun onRequestEditQuota(quota: QuotaEntity) {
+        editQuotaTarget.value = quota
+    }
+
+    fun onDismissEditDialog() {
+        editQuotaTarget.value = null
+    }
+
+    fun onRequestDeleteQuota(item: QuotaUiItem) {
+        deleteQuotaTarget.value = item
+    }
+
+    fun onDismissDeleteDialog() {
+        deleteQuotaTarget.value = null
+    }
+
+    fun onConfirmDeleteQuota(deleteHistory: Boolean) {
+        val target = deleteQuotaTarget.value ?: return
+        viewModelScope.launch {
+            if (deleteHistory) {
+                repository.hardDeleteQuota(target.quota.id)
+                _uiEvents.emit(DashboardUiEvent.ShowMessage("Deleted ${target.quota.title} and all logs"))
+            } else {
+                repository.archiveQuota(target.quota.id)
+                _uiEvents.emit(DashboardUiEvent.ShowMessage("Removed ${target.quota.title} from active week"))
+            }
+            deleteQuotaTarget.value = null
+        }
+    }
+
     fun onAddQuota(
         title: String,
         targetHours: Int,
         targetMinutes: Int,
         resetStrategy: ResetStrategy,
-        isPinned: Boolean
+        isPinned: Boolean,
+        iconKey: String? = null
+    ) {
+        onSaveQuota(null, title, targetHours, targetMinutes, resetStrategy, isPinned, iconKey)
+    }
+
+    fun onSaveQuota(
+        quotaId: Int?,
+        title: String,
+        targetHours: Int,
+        targetMinutes: Int,
+        resetStrategy: ResetStrategy,
+        isPinned: Boolean,
+        iconKey: String? = null
     ) {
         viewModelScope.launch {
             val totalMinutes = (targetHours * 60) + targetMinutes
             if (title.isBlank() || totalMinutes <= 0) return@launch
 
-            val entity = QuotaEntity(
-                title = title.trim(),
-                targetMinutes = totalMinutes,
-                resetStrategy = resetStrategy,
-                isPinned = isPinned
-            )
-            repository.addQuota(entity)
-            showAddDialog.value = false
+            if (quotaId != null) {
+                val existing = editQuotaTarget.value
+                val updated = existing?.copy(
+                    title = title.trim(),
+                    targetMinutes = totalMinutes,
+                    resetStrategy = resetStrategy,
+                    isPinned = isPinned,
+                    iconKey = iconKey
+                ) ?: QuotaEntity(
+                    id = quotaId,
+                    title = title.trim(),
+                    targetMinutes = totalMinutes,
+                    resetStrategy = resetStrategy,
+                    isPinned = isPinned,
+                    iconKey = iconKey
+                )
+                repository.updateQuota(updated)
+                editQuotaTarget.value = null
+            } else {
+                val entity = QuotaEntity(
+                    title = title.trim(),
+                    targetMinutes = totalMinutes,
+                    resetStrategy = resetStrategy,
+                    isPinned = isPinned,
+                    iconKey = iconKey
+                )
+                repository.addQuota(entity)
+                showAddDialog.value = false
+            }
         }
     }
 

@@ -18,6 +18,7 @@ interface QuotaDao {
         LEFT JOIN log_entries l ON q.id = l.quotaId 
             AND l.timestamp >= :startOfWeekTimestamp 
             AND l.timestamp <= :endOfWeekTimestamp 
+        WHERE q.isArchived = 0
         GROUP BY q.id
     """)
     fun getQuotasWithCurrentWeekProgress(
@@ -28,8 +29,14 @@ interface QuotaDao {
     @Query("SELECT * FROM quotas WHERE id = :id")
     suspend fun getQuotaById(id: Int): QuotaEntity?
 
-    @Query("SELECT * FROM quotas")
+    @Query("SELECT * FROM quotas WHERE isArchived = 0")
     fun getAllQuotas(): Flow<List<QuotaEntity>>
+
+    @Query("UPDATE quotas SET isArchived = 1 WHERE id = :quotaId")
+    suspend fun archiveQuota(quotaId: Int)
+
+    @Query("DELETE FROM quotas WHERE id = :quotaId")
+    suspend fun deleteQuotaById(quotaId: Int)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertQuota(quota: QuotaEntity): Long

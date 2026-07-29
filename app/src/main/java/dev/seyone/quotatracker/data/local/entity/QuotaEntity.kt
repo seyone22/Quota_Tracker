@@ -12,5 +12,7 @@ data class QuotaEntity(
     val targetMinutes: Int,
     val resetStrategy: ResetStrategy,
     val isPinned: Boolean = false,
+    val iconKey: String? = null,
+    val isArchived: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

@@ -7,13 +7,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,21 +40,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import dev.seyone.quotatracker.data.local.entity.QuotaEntity
 import dev.seyone.quotatracker.data.model.ResetStrategy
+import dev.seyone.quotatracker.ui.components.QuotaIconRegistry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditQuotaBottomSheet(
+    quotaToEdit: QuotaEntity? = null,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, targetHours: Int, targetMinutes: Int, resetStrategy: ResetStrategy, isPinned: Boolean) -> Unit
+    onConfirm: (quotaId: Int?, title: String, targetHours: Int, targetMinutes: Int, resetStrategy: ResetStrategy, isPinned: Boolean, iconKey: String?) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val isEditMode = quotaToEdit != null
 
-    var title by remember { mutableStateOf("") }
-    var hoursText by remember { mutableStateOf("7") }
-    var minutesText by remember { mutableStateOf("0") }
-    var resetStrategy by remember { mutableStateOf(ResetStrategy.CLEAN) }
-    var isPinned by remember { mutableStateOf(false) }
+    var title by remember(quotaToEdit) { mutableStateOf(quotaToEdit?.title ?: "") }
+    var hoursText by remember(quotaToEdit) {
+        mutableStateOf(quotaToEdit?.let { (it.targetMinutes / 60).toString() } ?: "7")
+    }
+    var minutesText by remember(quotaToEdit) {
+        mutableStateOf(quotaToEdit?.let { (it.targetMinutes % 60).toString() } ?: "0")
+    }
+    var resetStrategy by remember(quotaToEdit) {
+        mutableStateOf(quotaToEdit?.resetStrategy ?: ResetStrategy.CLEAN)
+    }
+    var isPinned by remember(quotaToEdit) {
+        mutableStateOf(quotaToEdit?.isPinned ?: false)
+    }
+    var selectedIconKey by remember(quotaToEdit) {
+        mutableStateOf(quotaToEdit?.iconKey)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -69,7 +89,7 @@ fun AddEditQuotaBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Add New Quota",
+                    text = if (isEditMode) "Edit Quota" else "Add New Quota",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -82,6 +102,44 @@ fun AddEditQuotaBottomSheet(
                         contentDescription = "Pin to Tile",
                         tint = if (isPinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+
+            // Icon Picker Section (20 Material Icons)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Icon (Optional)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(QuotaIconRegistry.availableIcons) { iconOption ->
+                        val isSelected = selectedIconKey == iconOption.key
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                selectedIconKey = if (isSelected) null else iconOption.key
+                            },
+                            label = { Text(iconOption.label) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = iconOption.icon,
+                                    contentDescription = iconOption.label,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        )
+                    }
                 }
             }
 
@@ -177,11 +235,11 @@ fun AddEditQuotaBottomSheet(
                         val h = hoursText.toIntOrNull() ?: 0
                         val m = minutesText.toIntOrNull() ?: 0
                         if (title.isNotBlank() && (h > 0 || m > 0)) {
-                            onConfirm(title, h, m, resetStrategy, isPinned)
+                            onConfirm(quotaToEdit?.id, title, h, m, resetStrategy, isPinned, selectedIconKey)
                         }
                     }
                 ) {
-                    Text("Save Quota")
+                    Text(if (isEditMode) "Update Quota" else "Save Quota")
                 }
             }
 
