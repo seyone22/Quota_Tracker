@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -52,6 +54,7 @@ fun AddEditQuotaBottomSheet(
     onConfirm: (quotaId: Int?, title: String, targetHours: Int, targetMinutes: Int, resetStrategy: ResetStrategy, isPinned: Boolean, iconKey: String?) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scrollState = rememberScrollState()
     val isEditMode = quotaToEdit != null
 
     var title by remember(quotaToEdit) { mutableStateOf(quotaToEdit?.title ?: "") }
@@ -79,6 +82,7 @@ fun AddEditQuotaBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

@@ -7,6 +7,7 @@ import dev.seyone.quotatracker.data.local.entity.QuotaEntity
 import dev.seyone.quotatracker.data.local.model.QuotaWithProgress
 import dev.seyone.quotatracker.data.model.ResetStrategy
 import dev.seyone.quotatracker.data.repository.QuotaRepository
+import dev.seyone.quotatracker.data.repository.SettingsRepository
 import dev.seyone.quotatracker.ui.dashboard.components.WeekPulseData
 import dev.seyone.quotatracker.util.WeekUtils
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -43,7 +44,8 @@ sealed interface DashboardUiEvent {
 }
 
 class QuotaDashboardViewModel(
-    private val repository: QuotaRepository
+    private val repository: QuotaRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiEvents = MutableSharedFlow<DashboardUiEvent>()
@@ -54,6 +56,13 @@ class QuotaDashboardViewModel(
     val editQuotaTarget = MutableStateFlow<QuotaEntity?>(null)
     val deleteQuotaTarget = MutableStateFlow<QuotaUiItem?>(null)
     val manualOverrideQuota = MutableStateFlow<QuotaUiItem?>(null)
+
+    val hasSeenFabTooltip: StateFlow<Boolean> = settingsRepository.hasSeenFabTooltip
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 
     val uiState: StateFlow<DashboardUiState> = repository.getQuotasWithCurrentWeekProgress()
         .map { list ->
@@ -141,6 +150,12 @@ class QuotaDashboardViewModel(
                     )
                 )
             }
+        }
+    }
+
+    fun onDismissFabTooltip() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenFabTooltip(true)
         }
     }
 
@@ -274,10 +289,13 @@ class QuotaDashboardViewModel(
         }
     }
 
-    class Factory(private val repository: QuotaRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val repository: QuotaRepository,
+        private val settingsRepository: SettingsRepository
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return QuotaDashboardViewModel(repository) as T
+            return QuotaDashboardViewModel(repository, settingsRepository) as T
         }
     }
 }

@@ -88,8 +88,8 @@ fun DashboardScreen(
     val editQuotaTarget by viewModel.editQuotaTarget.collectAsState()
     val deleteQuotaTarget by viewModel.deleteQuotaTarget.collectAsState()
     val manualOverrideItem by viewModel.manualOverrideQuota.collectAsState()
+    val hasSeenFabTooltip by viewModel.hasSeenFabTooltip.collectAsState()
 
-    var showFabTooltip by remember { mutableStateOf(true) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val windowSizeClass = androidx.compose.material3.adaptive.currentWindowAdaptiveInfo().windowSizeClass
@@ -214,12 +214,12 @@ fun DashboardScreen(
                             }
                         }
 
-                        // Progressive Tooltip Guidance Overlay with Width Constraint & Dynamic Offset
-                        if (showFabTooltip) {
+                        // Persistent Tooltip Guidance Overlay (Shown ONLY ONCE on first run)
+                        if (!hasSeenFabTooltip) {
                             val tooltipBottomPadding = if (isLandscape) 20.dp else 88.dp
                             Popup(
                                 alignment = Alignment.BottomEnd,
-                                onDismissRequest = { showFabTooltip = false },
+                                onDismissRequest = { viewModel.onDismissFabTooltip() },
                                 properties = PopupProperties(dismissOnClickOutside = false)
                             ) {
                                 Card(
@@ -238,13 +238,13 @@ fun DashboardScreen(
                                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
                                         Text(
-                                            text = "💡 Tap + to add quotas, or tap cards to log time!",
+                                            text = "Tap + to add quotas, or tap cards to log time!",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.inverseOnSurface,
                                             modifier = Modifier.weight(1f)
                                         )
                                         TextButton(
-                                            onClick = { showFabTooltip = false },
+                                            onClick = { viewModel.onDismissFabTooltip() },
                                             contentPadding = PaddingValues(0.dp)
                                         ) {
                                             Text("Got it", color = MaterialTheme.colorScheme.inversePrimary)

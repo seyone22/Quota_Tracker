@@ -148,9 +148,9 @@ fun AboutSettingsScreen(
             SettingsClickableItem(
                 icon = Icons.Outlined.SystemUpdate,
                 title = "Version",
-                subtitle = "Stable 1.0.0 (Jul 29, 2026)",
+                subtitle = "Stable 1.4.0 (Jul 29, 2026)",
                 onClick = {
-                    Toast.makeText(context, "Quota Tracker v1.0.0 Stable Build", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Quota Tracker v1.4.0 Stable Build", Toast.LENGTH_SHORT).show()
                 }
             )
 
@@ -230,10 +230,10 @@ fun AboutSettingsScreen(
             title = { Text("What's New in v1.0.0") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("⚡ Week Pulse Card: Custom horizontal stacked bars for macro & micro pace tracking.")
-                    Text("📊 168h Week Allocation Bar: Visual breakdown of Sleep, Work, Maintenance, and Quotas.")
-                    Text("📱 3-Screen Onboarding: Interactive baseline setup for friction-free setup.")
-                    Text("⌚ Wear OS Instant Sync: Seamless smartwatch companion app.")
+                    Text("Week Pulse Card: Custom horizontal stacked bars for macro & micro pace tracking.")
+                    Text("168h Week Allocation Bar: Visual breakdown of Sleep, Work, Maintenance, and Quotas.")
+                    Text("3-Screen Onboarding: Interactive baseline setup for friction-free setup.")
+                    Text("Wear OS Instant Sync: Seamless smartwatch companion app.")
                 }
             },
             confirmButton = {

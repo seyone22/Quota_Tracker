@@ -55,7 +55,10 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private val dashboardViewModel: QuotaDashboardViewModel by viewModels {
-        QuotaDashboardViewModel.Factory((application as QuotaApplication).repository)
+        QuotaDashboardViewModel.Factory(
+            (application as QuotaApplication).repository,
+            (application as QuotaApplication).settingsRepository
+        )
     }
 
     private val historyViewModel: HistoryViewModel by viewModels {

@@ -195,7 +195,7 @@ fun AdjustBaselineScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "💡 Adjusting non-negotiables updates your true unallocated free capacity without altering existing quota targets.",
+                        text = "Adjusting non-negotiables updates your true unallocated free capacity without altering existing quota targets.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
