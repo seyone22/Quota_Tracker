@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import dev.seyone.quotatracker.ui.dashboard.components.WeekPulseData
+import java.time.LocalDate
 import java.util.Locale
 
 data class QuotaUiItem(
@@ -30,6 +32,7 @@ data class QuotaUiItem(
 
 data class DashboardUiState(
     val quotaItems: List<QuotaUiItem> = emptyList(),
+    val pulseData: WeekPulseData? = null,
     val isLoading: Boolean = false,
     val currentWeekText: String = ""
 )
@@ -60,8 +63,12 @@ class QuotaDashboardViewModel(
                     .thenByDescending { it.quota.isPinned }
                     .thenByDescending { it.quota.createdAt }
             )
+
+            val pulseData = calculateWeekPulse(items)
+
             DashboardUiState(
                 quotaItems = sorted,
+                pulseData = pulseData,
                 isLoading = false,
                 currentWeekText = WeekUtils.getWeekString()
             )
@@ -71,6 +78,36 @@ class QuotaDashboardViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = DashboardUiState(isLoading = true, currentWeekText = WeekUtils.getWeekString())
         )
+
+    private fun calculateWeekPulse(items: List<QuotaUiItem>): WeekPulseData? {
+        if (items.isEmpty()) return null
+
+        val dayOfWeek = LocalDate.now().dayOfWeek.value // 1..7
+        val paceFraction = dayOfWeek / 7.0f
+
+        val totalTargetHours = items.sumOf { it.targetMinutes } / 60.0f
+        val hoursDone = items.sumOf { it.loggedMinutes } / 60.0f
+        val expectedHours = totalTargetHours * paceFraction
+        val hoursGap = maxOf(0.0f, expectedHours - hoursDone)
+        val hoursLeft = maxOf(0.0f, totalTargetHours - hoursDone - hoursGap)
+
+        val bucketsDone = items.count { it.isCompleted }
+        val bucketsOnTrack = items.count { !it.isCompleted && it.progressFraction >= paceFraction && it.loggedMinutes > 0 }
+        val bucketsBehind = items.count { !it.isCompleted && it.progressFraction < paceFraction && it.loggedMinutes > 0 }
+        val bucketsNotStarted = items.count { it.loggedMinutes == 0 }
+
+        return WeekPulseData(
+            hoursDone = hoursDone,
+            hoursGap = hoursGap,
+            hoursLeft = hoursLeft,
+            bucketsDone = bucketsDone,
+            bucketsOnTrack = bucketsOnTrack,
+            bucketsBehind = bucketsBehind,
+            bucketsNotStarted = bucketsNotStarted,
+            currentWeek = WeekUtils.getWeekString(),
+            dayOfWeek = dayOfWeek
+        )
+    }
 
     fun onQuickLog(quotaItem: QuotaUiItem, minutes: Int) {
         viewModelScope.launch {

@@ -8,6 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -35,6 +39,11 @@ import dev.seyone.quotatracker.ui.dashboard.DashboardScreen
 import dev.seyone.quotatracker.ui.dashboard.QuotaDashboardViewModel
 import dev.seyone.quotatracker.ui.history.HistoryScreen
 import dev.seyone.quotatracker.ui.history.HistoryViewModel
+import dev.seyone.quotatracker.ui.onboarding.OnboardingScreen
+import dev.seyone.quotatracker.ui.onboarding.OnboardingViewModel
+import dev.seyone.quotatracker.ui.settings.AboutSettingsScreen
+import dev.seyone.quotatracker.ui.settings.AdjustBaselineScreen
+import dev.seyone.quotatracker.ui.settings.DataStorageSettingsScreen
 import dev.seyone.quotatracker.ui.settings.SettingsScreen
 import dev.seyone.quotatracker.ui.settings.SettingsViewModel
 import dev.seyone.quotatracker.ui.theme.QuotaTrackerTheme
@@ -54,7 +63,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private val settingsViewModel: SettingsViewModel by viewModels {
-        SettingsViewModel.Factory((application as QuotaApplication).settingsRepository)
+        SettingsViewModel.Factory(
+            (application as QuotaApplication).settingsRepository,
+            (application as QuotaApplication).repository
+        )
+    }
+
+    private val onboardingViewModel: OnboardingViewModel by viewModels {
+        OnboardingViewModel.Factory(
+            (application as QuotaApplication).settingsRepository,
+            (application as QuotaApplication).repository
+        )
     }
 
     private val backupManager by lazy {
@@ -67,6 +86,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsRepository = (application as QuotaApplication).settingsRepository
             val themeMode by settingsRepository.themeMode.collectAsState(initial = "SYSTEM")
+            val hasCompletedOnboarding by settingsRepository.hasCompletedOnboarding.collectAsState(initial = true)
 
             QuotaTrackerTheme(themeMode = themeMode) {
                 val scope = rememberCoroutineScope()
@@ -81,7 +101,7 @@ class MainActivity : ComponentActivity() {
                         scope.launch {
                             val result = backupManager.exportBackup(it)
                             if (result.isSuccess) {
-                                Toast.makeText(this@MainActivity, "JSON backup exported!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@MainActivity, "JSON backup saved successfully!", Toast.LENGTH_SHORT).show()
                             } else {
                                 Toast.makeText(this@MainActivity, "JSON export failed", Toast.LENGTH_SHORT).show()
                             }
@@ -136,49 +156,51 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
-                        NavigationBar {
-                            NavigationBarItem(
-                                selected = currentRoute == "dashboard",
-                                onClick = {
-                                    if (currentRoute != "dashboard") {
-                                        navController.navigate("dashboard") {
-                                            popUpTo("dashboard") { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
+                        if (currentRoute != "onboarding" && currentRoute != "adjust_baseline" && currentRoute != "data_storage" && currentRoute != "about") {
+                            NavigationBar {
+                                NavigationBarItem(
+                                    selected = currentRoute == "dashboard",
+                                    onClick = {
+                                        if (currentRoute != "dashboard") {
+                                            navController.navigate("dashboard") {
+                                                popUpTo("dashboard") { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
                                         }
-                                    }
-                                },
-                                icon = { Icon(Icons.Outlined.Dashboard, contentDescription = "Dashboard") },
-                                label = { Text("Dashboard") }
-                            )
-                            NavigationBarItem(
-                                selected = currentRoute == "history",
-                                onClick = {
-                                    if (currentRoute != "history") {
-                                        navController.navigate("history") {
-                                            popUpTo("dashboard") { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
+                                    },
+                                    icon = { Icon(Icons.Outlined.Dashboard, contentDescription = "Dashboard") },
+                                    label = { Text("Dashboard") }
+                                )
+                                NavigationBarItem(
+                                    selected = currentRoute == "history",
+                                    onClick = {
+                                        if (currentRoute != "history") {
+                                            navController.navigate("history") {
+                                                popUpTo("dashboard") { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
                                         }
-                                    }
-                                },
-                                icon = { Icon(Icons.Outlined.History, contentDescription = "History") },
-                                label = { Text("History") }
-                            )
-                            NavigationBarItem(
-                                selected = currentRoute == "settings",
-                                onClick = {
-                                    if (currentRoute != "settings") {
-                                        navController.navigate("settings") {
-                                            popUpTo("dashboard") { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
+                                    },
+                                    icon = { Icon(Icons.Outlined.History, contentDescription = "History") },
+                                    label = { Text("History") }
+                                )
+                                NavigationBarItem(
+                                    selected = currentRoute == "settings",
+                                    onClick = {
+                                        if (currentRoute != "settings") {
+                                            navController.navigate("settings") {
+                                                popUpTo("dashboard") { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
                                         }
-                                    }
-                                },
-                                icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = "Settings") },
-                                label = { Text("Settings") }
-                            )
+                                    },
+                                    icon = { Icon(Icons.Outlined.MoreHoriz, contentDescription = "Settings") },
+                                    label = { Text("Settings") }
+                                )
+                            }
                         }
                     }
                 ) { innerPadding ->
@@ -190,8 +212,18 @@ class MainActivity : ComponentActivity() {
                     ) {
                         NavHost(
                             navController = navController,
-                            startDestination = "dashboard"
+                            startDestination = if (!hasCompletedOnboarding) "onboarding" else "dashboard"
                         ) {
+                            composable("onboarding") {
+                                OnboardingScreen(
+                                    viewModel = onboardingViewModel,
+                                    onOnboardingFinished = {
+                                        navController.navigate("dashboard") {
+                                            popUpTo("onboarding") { inclusive = true }
+                                        }
+                                    }
+                                )
+                            }
                             composable("dashboard") {
                                 DashboardScreen(viewModel = dashboardViewModel)
                             }
@@ -201,14 +233,51 @@ class MainActivity : ComponentActivity() {
                             composable("settings") {
                                 SettingsScreen(
                                     viewModel = settingsViewModel,
-                                    onExportJsonClick = { exportJsonLauncher.launch("quota_tracker_backup.json") },
-                                    onImportJsonClick = { importJsonLauncher.launch(arrayOf("application/json")) },
-                                    onExportCsvClick = { exportCsvLauncher.launch("quota_tracker_logs.csv") },
-                                    onExportCsvAnalyticsClick = { exportCsvAnalyticsLauncher.launch("quota_tracker_analytics.csv") },
+                                    onAdjustBaselineClick = { navController.navigate("adjust_baseline") },
+                                    onDataStorageClick = { navController.navigate("data_storage") },
+                                    onAboutClick = { navController.navigate("about") },
                                     onForceWearSyncClick = {
                                         (application as QuotaApplication).wearSyncBroadcaster.startSync()
                                         Toast.makeText(this@MainActivity, "Wear OS state sync triggered!", Toast.LENGTH_SHORT).show()
                                     }
+                                )
+                            }
+                            composable(
+                                route = "adjust_baseline",
+                                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
+                                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+                                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+                            ) {
+                                AdjustBaselineScreen(
+                                    viewModel = settingsViewModel,
+                                    onBackClick = { navController.popBackStack() }
+                                )
+                            }
+                            composable(
+                                route = "data_storage",
+                                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
+                                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+                                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+                            ) {
+                                DataStorageSettingsScreen(
+                                    onExportJsonClick = { exportJsonLauncher.launch("quota_tracker_backup.json") },
+                                    onImportJsonClick = { importJsonLauncher.launch(arrayOf("application/json")) },
+                                    onExportCsvClick = { exportCsvLauncher.launch("quota_tracker_logs.csv") },
+                                    onExportCsvAnalyticsClick = { exportCsvAnalyticsLauncher.launch("quota_tracker_analytics.csv") },
+                                    onBackClick = { navController.popBackStack() }
+                                )
+                            }
+                            composable(
+                                route = "about",
+                                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
+                                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+                                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+                            ) {
+                                AboutSettingsScreen(
+                                    onBackClick = { navController.popBackStack() }
                                 )
                             }
                         }

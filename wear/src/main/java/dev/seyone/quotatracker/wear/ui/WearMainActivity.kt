@@ -37,7 +37,7 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.layout.ScalingLazyColumn
-import com.google.android.horologist.compose.layout.ScalingLazyColumnDefaults
+import com.google.android.horologist.compose.layout.rememberResponsiveColumnState
 import dev.seyone.quotatracker.wear.sync.WearDataClientManager
 import dev.seyone.quotatracker.wear.sync.WearQuotaItem
 import kotlinx.coroutines.launch
@@ -107,8 +107,8 @@ fun WearApp(dataClientManager: WearDataClientManager) {
             }
         } else {
             ScalingLazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                columnState = ScalingLazyColumnDefaults.belowTimeText().create()
+                columnState = rememberResponsiveColumnState(),
+                modifier = Modifier.fillMaxSize()
             ) {
                 items(sortedQuotas.size) { index ->
                     val item = sortedQuotas[index]

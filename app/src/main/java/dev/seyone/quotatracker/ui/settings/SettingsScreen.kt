@@ -8,43 +8,44 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Sort
-import androidx.compose.material.icons.outlined.Analytics
-import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Storage
-import androidx.compose.material.icons.outlined.TableChart
 import androidx.compose.material.icons.outlined.Vibration
 import androidx.compose.material.icons.outlined.Watch
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -61,21 +62,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import dev.seyone.quotatracker.ui.settings.components.WeekAllocationCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
-    onExportJsonClick: () -> Unit,
-    onImportJsonClick: () -> Unit,
-    onExportCsvClick: () -> Unit,
-    onExportCsvAnalyticsClick: () -> Unit,
+    onAdjustBaselineClick: () -> Unit,
+    onDataStorageClick: () -> Unit,
+    onAboutClick: () -> Unit,
     onForceWearSyncClick: () -> Unit
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var showThemeDialog by remember { mutableStateOf(false) }
-    var showDataStorageSheet by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -132,13 +132,36 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
-            // Section: Preferences
+            // Section: 168h Allocation Overview
             Text(
-                text = "Preferences",
+                text = "168h Allocation Overview",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+            )
+
+            WeekAllocationCard(
+                allocationData = uiState.allocationData,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            // Section: Preferences & Baseline
+            Text(
+                text = "Preferences & Baseline",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+            )
+
+            SettingsClickableItem(
+                icon = Icons.Outlined.Schedule,
+                title = "Adjust Baseline Hours",
+                subtitle = "Edit non-negotiable sleep, work, and maintenance hours",
+                onClick = onAdjustBaselineClick
             )
 
             SettingsSwitchItem(
@@ -201,11 +224,55 @@ fun SettingsScreen(
                 modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
             )
 
+            // Wear OS Discovery Banner
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Watch,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Have a smartwatch?",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Quota syncs instantly with Wear OS.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                    FilledTonalButton(
+                        onClick = onForceWearSyncClick,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text("Sync", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+
             SettingsClickableItem(
                 icon = Icons.Outlined.Storage,
                 title = "Data and storage",
                 subtitle = "Export or restore JSON backups, generate CSV reports",
-                onClick = { showDataStorageSheet = true }
+                onClick = onDataStorageClick
             )
 
             SettingsClickableItem(
@@ -228,9 +295,9 @@ fun SettingsScreen(
 
             SettingsClickableItem(
                 icon = Icons.Outlined.Info,
-                title = "Quota Tracker",
-                subtitle = "Version 1.0.0 • Production Build",
-                onClick = {}
+                title = "About Quota Tracker",
+                subtitle = "Version 1.0.0 • Licenses • Release notes",
+                onClick = onAboutClick
             )
         }
     }
@@ -276,71 +343,6 @@ fun SettingsScreen(
                 }
             }
         )
-    }
-
-    // Data & Storage Bottom Sheet
-    if (showDataStorageSheet) {
-        val sheetState = rememberModalBottomSheetState()
-        ModalBottomSheet(
-            onDismissRequest = { showDataStorageSheet = false },
-            sheetState = sheetState
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "Data and Storage",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                SettingsClickableItem(
-                    icon = Icons.Outlined.FileUpload,
-                    title = "Export JSON Backup",
-                    subtitle = "Save a complete database backup file locally",
-                    onClick = {
-                        showDataStorageSheet = false
-                        onExportJsonClick()
-                    }
-                )
-
-                SettingsClickableItem(
-                    icon = Icons.Outlined.FileDownload,
-                    title = "Restore JSON Backup",
-                    subtitle = "Import a JSON backup to restore quotas and logs",
-                    onClick = {
-                        showDataStorageSheet = false
-                        onImportJsonClick()
-                    }
-                )
-
-                SettingsClickableItem(
-                    icon = Icons.Outlined.TableChart,
-                    title = "Export CSV Spreadsheet",
-                    subtitle = "Export granular log history into CSV format",
-                    onClick = {
-                        showDataStorageSheet = false
-                        onExportCsvClick()
-                    }
-                )
-
-                SettingsClickableItem(
-                    icon = Icons.Outlined.Analytics,
-                    title = "Export CSV Analytics",
-                    subtitle = "Export comprehensive snapshot and log history report",
-                    onClick = {
-                        showDataStorageSheet = false
-                        onExportCsvAnalyticsClick()
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-        }
     }
 }
 

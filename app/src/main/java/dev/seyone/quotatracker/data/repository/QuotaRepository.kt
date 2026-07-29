@@ -33,6 +33,8 @@ class QuotaRepository(
             }
     }
 
+    fun getAllQuotas(): Flow<List<QuotaEntity>> = quotaDao.getAllQuotas()
+
     /**
      * Adds a log entry (or entries if split across midnight).
      * Returns the list of inserted LogEntry IDs so the caller can perform an undo action.
