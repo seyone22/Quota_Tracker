@@ -148,9 +148,9 @@ fun AboutSettingsScreen(
             SettingsClickableItem(
                 icon = Icons.Outlined.SystemUpdate,
                 title = "Version",
-                subtitle = "Stable 1.4.0 (Jul 29, 2026)",
+                subtitle = "Alpha 1.4.0 (Jul 29, 2026)",
                 onClick = {
-                    Toast.makeText(context, "Quota Tracker v1.4.0 Stable Build", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Quota Tracker v1.4.0 Alpha Build", Toast.LENGTH_SHORT).show()
                 }
             )
 
