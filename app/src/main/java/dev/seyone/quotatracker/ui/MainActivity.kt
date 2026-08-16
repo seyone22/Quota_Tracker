@@ -46,6 +46,7 @@ import dev.seyone.quotatracker.ui.onboarding.OnboardingScreen
 import dev.seyone.quotatracker.ui.onboarding.OnboardingViewModel
 import dev.seyone.quotatracker.ui.settings.AboutSettingsScreen
 import dev.seyone.quotatracker.ui.settings.AdjustBaselineScreen
+import dev.seyone.quotatracker.ui.settings.CardStyleSelectionScreen
 import dev.seyone.quotatracker.ui.settings.DataStorageSettingsScreen
 import dev.seyone.quotatracker.ui.settings.SettingsScreen
 import dev.seyone.quotatracker.ui.settings.SettingsViewModel
@@ -101,7 +102,7 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
 
-                val subPageRoutes = setOf("onboarding", "adjust_baseline", "data_storage", "about")
+                val subPageRoutes = setOf("onboarding", "adjust_baseline", "card_style", "data_storage", "about")
                 val adaptiveInfo = currentWindowAdaptiveInfo()
                 val windowSizeClass = adaptiveInfo.windowSizeClass
                 val isLandscape = windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT
@@ -251,6 +252,7 @@ class MainActivity : ComponentActivity() {
                                 SettingsScreen(
                                     viewModel = settingsViewModel,
                                     onAdjustBaselineClick = { navController.navigate("adjust_baseline") },
+                                    onCardStyleClick = { navController.navigate("card_style") },
                                     onDataStorageClick = { navController.navigate("data_storage") },
                                     onAboutClick = { navController.navigate("about") },
                                     onForceWearSyncClick = {
@@ -267,6 +269,18 @@ class MainActivity : ComponentActivity() {
                                 popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
                             ) {
                                 AdjustBaselineScreen(
+                                    viewModel = settingsViewModel,
+                                    onBackClick = { navController.popBackStack() }
+                                )
+                            }
+                            composable(
+                                route = "card_style",
+                                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                                exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) + fadeOut() },
+                                popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) + fadeIn() },
+                                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+                            ) {
+                                CardStyleSelectionScreen(
                                     viewModel = settingsViewModel,
                                     onBackClick = { navController.popBackStack() }
                                 )

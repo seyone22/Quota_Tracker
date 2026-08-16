@@ -30,6 +30,7 @@ data class WeekAllocationData(
     val sleepHours: Int,
     val workHours: Int,
     val maintenanceHours: Int,
+    val customNonNegotiableHours: Int = 0,
     val quotaTargetHours: Int,
     val unfilledHours: Int
 )
@@ -42,6 +43,7 @@ fun WeekAllocationCard(
     val sleepColor = Color(0xFF3F51B5)       // Sleep Blue
     val workColor = Color(0xFFFF9800)        // Work Amber
     val maintenanceColor = Color(0xFF8E24AA) // Maintenance Purple
+    val customColor = Color(0xFFE91E63)      // Custom Pink/Rose
     val activityColor = Color(0xFF24A16F)    // My Activity Emerald Green
     val unfilledColor = Color(0xFF4A4A4A)    // Unfilled Muted Surface
 
@@ -150,6 +152,28 @@ fun WeekAllocationCard(
                     }
                 }
 
+                if (allocationData.customNonNegotiableHours > 0) {
+                    val customRatio = allocationData.customNonNegotiableHours / 168f
+                    Box(
+                        modifier = Modifier
+                            .weight(allocationData.customNonNegotiableHours.toFloat())
+                            .height(32.dp)
+                            .background(customColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (customRatio >= 0.08f) {
+                            Text(
+                                text = "${allocationData.customNonNegotiableHours}h",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
                 if (allocationData.quotaTargetHours > 0) {
                     val activityRatio = allocationData.quotaTargetHours / 168f
                     Box(
@@ -204,13 +228,16 @@ fun WeekAllocationCard(
                 ) {
                     LegendDot(color = sleepColor, label = "Sleep (${allocationData.sleepHours}h)")
                     LegendDot(color = workColor, label = "Work (${allocationData.workHours}h)")
-                    LegendDot(color = maintenanceColor, label = "Maintenance (${allocationData.maintenanceHours}h)")
+                    LegendDot(color = maintenanceColor, label = "Maint (${allocationData.maintenanceHours}h)")
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (allocationData.customNonNegotiableHours > 0) {
+                        LegendDot(color = customColor, label = "Custom (${allocationData.customNonNegotiableHours}h)")
+                    }
                     LegendDot(color = activityColor, label = "My Activity (${allocationData.quotaTargetHours}h)")
                     LegendDot(color = unfilledColor, label = "Unfilled (${allocationData.unfilledHours}h)")
                 }

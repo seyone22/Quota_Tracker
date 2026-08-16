@@ -6,35 +6,44 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,70 +54,117 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import dev.seyone.quotatracker.data.model.QuotaCardStyle
 import dev.seyone.quotatracker.ui.components.QuotaIconRegistry
 import dev.seyone.quotatracker.ui.dashboard.QuotaUiItem
 import dev.seyone.quotatracker.ui.theme.CompletedGreenContainer
 import dev.seyone.quotatracker.ui.theme.CompletedGreenProgress
 import dev.seyone.quotatracker.ui.theme.CompletedGreenText
+import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun QuotaCard(
     item: QuotaUiItem,
-    onQuickLog: (Int) -> Unit,
+    cardStyle: QuotaCardStyle = QuotaCardStyle.DUAL_TONE,
+    onQuickLog: (minutesDelta: Int) -> Unit,
     onLongPress: () -> Unit,
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val isCompleted = item.isCompleted
-    var showMenu by remember { mutableStateOf(false) }
-
     val scale = remember { Animatable(1f) }
 
-    LaunchedEffect(isCompleted) {
-        if (isCompleted) {
+    LaunchedEffect(item.isCompleted) {
+        if (item.isCompleted) {
             scale.animateTo(1.03f, animationSpec = tween(150))
             scale.animateTo(1.0f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy))
         }
     }
 
-    val containerColor by animateColorAsState(
-        targetValue = if (isCompleted) CompletedGreenContainer else MaterialTheme.colorScheme.surfaceVariant,
-        label = "containerColor"
-    )
+    val cardModifier = modifier
+        .fillMaxWidth()
+        .graphicsLayer(scaleX = scale.value, scaleY = scale.value)
+        .combinedClickable(
+            onClick = {},
+            onLongClick = onLongPress
+        )
 
-    val contentColor by animateColorAsState(
-        targetValue = if (isCompleted) CompletedGreenText else MaterialTheme.colorScheme.onSurfaceVariant,
-        label = "contentColor"
-    )
+    when (cardStyle) {
+        QuotaCardStyle.DUAL_TONE -> QuotaCard_DualTone(
+            item = item,
+            onQuickLog = onQuickLog,
+            onLongPress = onLongPress,
+            onEdit = onEdit,
+            onDelete = onDelete,
+            modifier = cardModifier
+        )
+        QuotaCardStyle.SEGMENTED_STEPPER -> QuotaCard_SegmentedStepper(
+            item = item,
+            onQuickLog = onQuickLog,
+            onLongPress = onLongPress,
+            onEdit = onEdit,
+            onDelete = onDelete,
+            modifier = cardModifier
+        )
+        QuotaCardStyle.GLOW_BANNER -> QuotaCard_GlowBanner(
+            item = item,
+            onQuickLog = onQuickLog,
+            onLongPress = onLongPress,
+            onEdit = onEdit,
+            onDelete = onDelete,
+            modifier = cardModifier
+        )
+    }
+}
 
-    val progressColor by animateColorAsState(
-        targetValue = if (isCompleted) CompletedGreenProgress else MaterialTheme.colorScheme.primary,
-        label = "progressColor"
+@Composable
+private fun QuotaCard_DualTone(
+    item: QuotaUiItem,
+    onQuickLog: (Int) -> Unit,
+    onLongPress: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isSubtractMode by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+
+    val loggedMinutes = item.loggedMinutes
+    val targetMinutes = item.targetMinutes
+    val isCompleted = item.isCompleted
+    val overtimeMinutes = maxOf(0, loggedMinutes - targetMinutes)
+    val percentage = if (targetMinutes > 0) (loggedMinutes.toFloat() / targetMinutes.toFloat() * 100).toInt() else 0
+
+    val primaryFraction = (loggedMinutes.toFloat() / targetMinutes.toFloat().coerceAtLeast(1f)).coerceAtMost(1.0f)
+    val overtimeFraction = if (loggedMinutes > targetMinutes) {
+        ((loggedMinutes - targetMinutes).toFloat() / targetMinutes.toFloat().coerceAtLeast(1f)).coerceAtMost(1.0f)
+    } else 0f
+
+    val cardBgColor by animateColorAsState(
+        targetValue = if (isCompleted) MaterialTheme.colorScheme.surfaceContainerHighest
+        else MaterialTheme.colorScheme.surfaceContainerHigh,
+        label = "cardBg"
     )
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .graphicsLayer(scaleX = scale.value, scaleY = scale.value)
-            .clip(RoundedCornerShape(16.dp))
-            .combinedClickable(
-                onClick = {},
-                onLongClick = onLongPress
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBgColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header Row: Title, Reset Strategy badge, Pin Icon, Checkmark, Three-dot Menu
+            // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -116,203 +172,454 @@ fun QuotaCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    val quotaIcon = QuotaIconRegistry.getIcon(item.quota.iconKey)
-                    if (quotaIcon != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(
+                                if (overtimeMinutes > 0) MaterialTheme.colorScheme.tertiaryContainer
+                                else MaterialTheme.colorScheme.primaryContainer
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val iconVector = QuotaIconRegistry.getIcon(item.quota.iconKey) ?: Icons.Default.AutoAwesome
                         Icon(
-                            imageVector = quotaIcon,
+                            imageVector = iconVector,
                             contentDescription = null,
-                            tint = contentColor,
-                            modifier = Modifier.size(20.dp).padding(end = 6.dp)
+                            tint = if (overtimeMinutes > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
-                    Text(
-                        text = item.quota.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
-                    )
-                    if (item.quota.isPinned) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            imageVector = Icons.Default.PushPin,
-                            contentDescription = "Pinned",
-                            tint = contentColor,
-                            modifier = Modifier.size(16.dp)
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = item.quota.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (item.quota.isPinned) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.PushPin,
+                                    contentDescription = "Pinned",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                        Text(
+                            text = if (overtimeMinutes > 0) "Overtime Active" else item.quota.resetStrategy.name.lowercase().replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
                     }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = item.quota.resetStrategy.name.lowercase().replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = contentColor.copy(alpha = 0.7f),
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-
-                    if (isCompleted) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Completed",
-                            tint = CompletedGreenProgress,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    if (overtimeMinutes > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Text(
+                                    text = "+${formatHoursShort(overtimeMinutes)}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
                     }
 
                     Box {
-                        IconButton(
-                            onClick = { showMenu = true },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More Options",
-                                tint = contentColor,
-                                modifier = Modifier.size(20.dp)
-                            )
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Options", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                         }
 
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Adjust / Manage Logs") },
+                                leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
+                                onClick = { showMenu = false; onLongPress() }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Edit") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "Edit Quota"
-                                    )
-                                },
-                                onClick = {
-                                    showMenu = false
-                                    onEdit()
-                                }
+                                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                onClick = { showMenu = false; onEdit() }
                             )
-
                             DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = "Delete",
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete Quota",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                onClick = {
-                                    showMenu = false
-                                    onDelete()
-                                }
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = { showMenu = false; onDelete() }
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Stat Display
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = formatHours(loggedMinutes),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = " / ${formatHours(targetMinutes)} hrs",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 3.dp)
+                    )
+                }
 
-            // Progress text and Percentage
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (overtimeMinutes > 0) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest
+                ) {
+                    Text(
+                        text = "$percentage%",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (overtimeMinutes > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            // Expressive Dual-Tone Progress Meter
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(fraction = primaryFraction)
+                        .background(
+                            Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
+                        )
+                )
+
+                if (overtimeFraction > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(fraction = overtimeFraction)
+                            .background(
+                                Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.error))
+                            )
+                    )
+                }
+            }
+
+            // Mode Toggle Pill & Quick Action Chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.height(40.dp)
+                ) {
+                    Row(modifier = Modifier.padding(3.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(if (!isSubtractMode) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                .clickable { isSubtractMode = false },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Mode", tint = if (!isSubtractMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(if (isSubtractMode) MaterialTheme.colorScheme.error else Color.Transparent)
+                                .clickable { isSubtractMode = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Remove, contentDescription = "Subtract Mode", tint = if (isSubtractMode) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+
+                val deltas = if (isSubtractMode) listOf(-15, -30, -60) else listOf(15, 30, 60)
+                val labels = if (isSubtractMode) listOf("-15m", "-30m", "-1h") else listOf("+15m", "+30m", "+1h")
+
+                deltas.forEachIndexed { idx, delta ->
+                    Surface(
+                        onClick = { onQuickLog(delta) },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSubtractMode) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier.height(40.dp)
+                    ) {
+                        Box(modifier = Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = labels[idx],
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSubtractMode) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuotaCard_SegmentedStepper(
+    item: QuotaUiItem,
+    onQuickLog: (Int) -> Unit,
+    onLongPress: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    val loggedMinutes = item.loggedMinutes
+    val targetMinutes = item.targetMinutes
+    val overtimeMinutes = maxOf(0, loggedMinutes - targetMinutes)
+    val percentage = if (targetMinutes > 0) (loggedMinutes.toFloat() / targetMinutes.toFloat() * 100).toInt() else 0
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.formattedProgressText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = contentColor
-                )
-                val pct = (item.progressFraction * 100).toInt()
-                Text(
-                    text = "$pct%",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.8f)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val iconVector = QuotaIconRegistry.getIcon(item.quota.iconKey) ?: Icons.Default.FitnessCenter
+                        Icon(iconVector, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
+                    }
+
+                    Text(text = item.quota.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (overtimeMinutes > 0) {
+                        Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.tertiaryContainer, contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
+                            Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.LocalFireDepartment, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Text("🔥 +${formatHoursShort(overtimeMinutes)}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Box {
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Default.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(text = { Text("Adjust / Manage Logs") }, leadingIcon = { Icon(Icons.Default.History, contentDescription = null) }, onClick = { showMenu = false; onLongPress() })
+                            DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }, onClick = { showMenu = false; onEdit() })
+                            DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; onDelete() })
+                        }
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("${formatHours(loggedMinutes)} / ${formatHours(targetMinutes)} hrs", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                Text("$percentage%", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = if (overtimeMinutes > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary)
+            }
 
-            // Progress Bar
-            LinearProgressIndicator(
-                progress = { item.progressFraction },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = progressColor,
-                trackColor = contentColor.copy(alpha = 0.15f)
-            )
+            Row(modifier = Modifier.fillMaxWidth().height(12.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                val segmentCount = 5
+                val currentMax = maxOf(targetMinutes, loggedMinutes).coerceAtLeast(1)
+                val targetFraction = targetMinutes.toFloat() / currentMax.toFloat()
+                val loggedFraction = loggedMinutes.toFloat() / currentMax.toFloat()
 
-            Spacer(modifier = Modifier.height(12.dp))
+                repeat(segmentCount) { idx ->
+                    val segStart = idx.toFloat() / segmentCount.toFloat()
+                    val segEnd = (idx + 1).toFloat() / segmentCount.toFloat()
+                    val fill = when {
+                        loggedFraction >= segEnd -> 1.0f
+                        loggedFraction > segStart -> (loggedFraction - segStart) / (segEnd - segStart)
+                        else -> 0.0f
+                    }
+                    val isOvertimeSeg = segStart >= targetFraction
 
-            // Quick Actions Row: +15m, +30m, +1h (Disabled when completed)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val chipEnabled = !isCompleted
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                        if (fill > 0f) {
+                            Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(fraction = fill).background(if (isOvertimeSeg) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary))
+                        }
+                    }
+                }
+            }
 
-                SuggestionChip(
-                    onClick = { if (chipEnabled) onQuickLog(15) },
-                    enabled = chipEnabled,
-                    label = { Text("+15m") },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        disabledContainerColor = Color.Transparent,
-                        disabledLabelColor = contentColor.copy(alpha = 0.4f)
-                    )
-                )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHighest, modifier = Modifier.height(44.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp)) {
+                        IconButton(onClick = { onQuickLog(-15) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Remove, contentDescription = "-15m", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                        }
+                        Text("15m", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(horizontal = 8.dp))
+                        IconButton(onClick = { onQuickLog(15) }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Add, contentDescription = "+15m", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
 
-                SuggestionChip(
-                    onClick = { if (chipEnabled) onQuickLog(30) },
-                    enabled = chipEnabled,
-                    label = { Text("+30m") },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        disabledContainerColor = Color.Transparent,
-                        disabledLabelColor = contentColor.copy(alpha = 0.4f)
-                    )
-                )
-
-                SuggestionChip(
-                    onClick = { if (chipEnabled) onQuickLog(60) },
-                    enabled = chipEnabled,
-                    label = { Text("+1h") },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        disabledContainerColor = Color.Transparent,
-                        disabledLabelColor = contentColor.copy(alpha = 0.4f)
-                    )
-                )
-
-                if (isCompleted) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Locked",
-                            tint = contentColor.copy(alpha = 0.6f),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Long-press to override",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = contentColor.copy(alpha = 0.6f),
-                            fontSize = 10.sp
-                        )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(onClick = { onQuickLog(30) }, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.height(44.dp)) {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                            Text("+30m", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
+                    }
+                    Surface(onClick = { onQuickLog(60) }, shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.height(44.dp)) {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                            Text("+1h", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun QuotaCard_GlowBanner(
+    item: QuotaUiItem,
+    onQuickLog: (Int) -> Unit,
+    onLongPress: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isDeductMode by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+
+    val loggedMinutes = item.loggedMinutes
+    val targetMinutes = item.targetMinutes
+    val overtimeMinutes = maxOf(0, loggedMinutes - targetMinutes)
+    val percentage = if (targetMinutes > 0) (loggedMinutes.toFloat() / targetMinutes.toFloat() * 100).toInt() else 0
+    val progressFraction = (loggedMinutes.toFloat() / targetMinutes.toFloat().coerceAtLeast(1f)).coerceAtMost(1.0f)
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            if (overtimeMinutes > 0) {
+                Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.tertiaryContainer, contentColor = MaterialTheme.colorScheme.onTertiaryContainer) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("OVERACHIEVER MODE", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Black)
+                        }
+                        Text("+${formatHoursShort(overtimeMinutes)} Extra", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
+                    }
+                }
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                        val iconVector = QuotaIconRegistry.getIcon(item.quota.iconKey) ?: Icons.Default.MusicNote
+                        Icon(iconVector, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    }
+                    Text(item.quota.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("$percentage%", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = if (overtimeMinutes > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary)
+                    Box {
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Default.MoreVert, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        }
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                            DropdownMenuItem(text = { Text("Adjust / Manage Logs") }, leadingIcon = { Icon(Icons.Default.History, contentDescription = null) }, onClick = { showMenu = false; onLongPress() })
+                            DropdownMenuItem(text = { Text("Edit") }, leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }, onClick = { showMenu = false; onEdit() })
+                            DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; onDelete() })
+                        }
+                    }
+                }
+            }
+
+            Text("${formatHours(loggedMinutes)} / ${formatHours(targetMinutes)} hrs logged", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Box(modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(fraction = progressFraction).background(Brush.horizontalGradient(if (overtimeMinutes > 0) listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary) else listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))))
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { isDeductMode = !isDeductMode }, modifier = Modifier.size(40.dp).clip(CircleShape).background(if (isDeductMode) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                    Icon(imageVector = if (isDeductMode) Icons.Default.Remove else Icons.Default.Add, contentDescription = null, tint = if (isDeductMode) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                }
+
+                val deltas = if (isDeductMode) listOf(-15, -30, -60) else listOf(15, 30, 60)
+                val labels = if (isDeductMode) listOf("-15m", "-30m", "-1h") else listOf("+15m", "+30m", "+1h")
+
+                deltas.forEachIndexed { idx, delta ->
+                    Surface(onClick = { onQuickLog(delta) }, shape = RoundedCornerShape(50), color = if (isDeductMode) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHighest, modifier = Modifier.height(40.dp)) {
+                        Box(modifier = Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                            Text(text = labels[idx], fontWeight = FontWeight.Bold, color = if (isDeductMode) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatHours(minutes: Int): String {
+    val hrs = minutes / 60.0
+    return if (hrs % 1.0 == 0.0) String.format(Locale.getDefault(), "%.0f", hrs)
+    else String.format(Locale.getDefault(), "%.1f", hrs)
+}
+
+private fun formatHoursShort(minutes: Int): String {
+    val hrs = minutes / 60
+    val mins = minutes % 60
+    return when {
+        hrs > 0 && mins > 0 -> "${hrs}h ${mins}m"
+        hrs > 0 -> "${hrs}h"
+        else -> "${mins}m"
     }
 }

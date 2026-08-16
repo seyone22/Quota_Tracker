@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Schedule
@@ -65,6 +66,7 @@ import androidx.window.core.layout.WindowWidthSizeClass
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onAdjustBaselineClick: () -> Unit = {},
+    onCardStyleClick: () -> Unit = {},
     onDataStorageClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
     onForceWearSyncClick: () -> Unit = {}
@@ -159,6 +161,13 @@ fun SettingsScreen(
                     else -> "System default"
                 },
                 onClick = { showThemeDialog = true }
+            )
+
+            SettingsClickableItem(
+                icon = androidx.compose.material.icons.Icons.Outlined.ColorLens,
+                title = "Card Design Style",
+                subtitle = uiState.cardStyle.displayName,
+                onClick = onCardStyleClick
             )
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

@@ -84,10 +84,12 @@ fun DashboardScreen(
     topBarActions: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val cardStyle by viewModel.cardStyle.collectAsState()
     val showAddDialog by viewModel.showAddDialog.collectAsState()
     val editQuotaTarget by viewModel.editQuotaTarget.collectAsState()
     val deleteQuotaTarget by viewModel.deleteQuotaTarget.collectAsState()
-    val manualOverrideItem by viewModel.manualOverrideQuota.collectAsState()
+    val adjustQuotaTargetItem by viewModel.adjustQuotaTarget.collectAsState()
+    val adjustQuotaRecentLogs by viewModel.adjustQuotaRecentLogs.collectAsState()
     val hasSeenFabTooltip by viewModel.hasSeenFabTooltip.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -197,11 +199,12 @@ fun DashboardScreen(
                             ) { item ->
                                 QuotaCard(
                                     item = item,
+                                    cardStyle = cardStyle,
                                     onQuickLog = { minutes ->
                                         viewModel.onQuickLog(item, minutes)
                                     },
                                     onLongPress = {
-                                        viewModel.onSubtractLog(item)
+                                        viewModel.adjustQuotaTarget.value = item
                                     },
                                     onEdit = {
                                         viewModel.onRequestEditQuota(item.quota)
@@ -323,12 +326,17 @@ fun DashboardScreen(
             )
         }
 
-        manualOverrideItem?.let { item ->
-            ManualOverrideBottomSheet(
-                quotaItem = item,
-                onDismiss = { viewModel.manualOverrideQuota.value = null },
-                onConfirm = { extraMinutes ->
-                    viewModel.onManualOverrideLog(item.quota.id, extraMinutes)
+        adjustQuotaTargetItem?.let { targetItem ->
+            dev.seyone.quotatracker.ui.dashboard.components.LogAdjustmentBottomSheet(
+                quotaItem = targetItem,
+                recentLogs = adjustQuotaRecentLogs,
+                onDismiss = { viewModel.adjustQuotaTarget.value = null },
+                onAdjustTime = { minutesDelta ->
+                    viewModel.onQuickLog(targetItem, minutesDelta)
+                    viewModel.adjustQuotaTarget.value = null
+                },
+                onDeleteLogEntry = { logId ->
+                    viewModel.onDeleteLogEntry(logId)
                 }
             )
         }

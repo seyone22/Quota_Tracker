@@ -75,6 +75,10 @@ class QuotaRepository(
         return logEntryDao.getAllLogsWithQuotas()
     }
 
+    fun getLogsForQuota(quotaId: Int): Flow<List<LogEntryEntity>> {
+        return logEntryDao.getLogsForQuota(quotaId)
+    }
+
     /**
      * Handles subtracting log duration (e.g. -15m on long-pressing an active card).
      * Prevents total logged time from ever dropping below 0.

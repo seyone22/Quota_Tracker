@@ -24,10 +24,13 @@ data class SettingsUiState(
     val sleepHoursPerNight: Int = 8,
     val workHoursPerWeek: Int = 40,
     val maintenanceHoursPerWeek: Int = 14,
+    val cardStyle: dev.seyone.quotatracker.data.model.QuotaCardStyle = dev.seyone.quotatracker.data.model.QuotaCardStyle.DUAL_TONE,
+    val customNonNegotiables: List<dev.seyone.quotatracker.data.model.CustomNonNegotiable> = emptyList(),
     val allocationData: WeekAllocationData = WeekAllocationData(
         sleepHours = 56,
         workHours = 40,
         maintenanceHours = 14,
+        customNonNegotiableHours = 0,
         quotaTargetHours = 0,
         unfilledHours = 58
     )
@@ -42,29 +45,33 @@ class SettingsViewModel(
         settingsRepository.hapticFeedbackEnabled,
         settingsRepository.autoSortCompleted,
         settingsRepository.themeMode,
-        settingsRepository.weekendCheckInEnabled
-    ) { haptic, autoSort, theme, checkIn ->
-        listOf(haptic, autoSort, theme, checkIn)
+        settingsRepository.weekendCheckInEnabled,
+        settingsRepository.cardStyle
+    ) { haptic, autoSort, theme, checkIn, cardStyle ->
+        listOf(haptic, autoSort, theme, checkIn, cardStyle)
     }
 
     private val baselineFlow = combine(
         settingsRepository.sleepHoursPerNight,
         settingsRepository.workHoursPerWeek,
         settingsRepository.maintenanceHoursPerWeek,
+        settingsRepository.customNonNegotiables,
         quotaRepository?.getAllQuotas() ?: flowOf(emptyList())
-    ) { sleepNight, workWeek, maintWeek, quotas ->
+    ) { sleepNight, workWeek, maintWeek, customs, quotas ->
         val sleepWeekly = sleepNight * 7
+        val customWeekly = customs.sumOf { it.hoursPerWeek }
         val activityWeekly = (quotas.sumOf { it.targetMinutes } / 60.0f).roundToInt()
-        val unfilled = maxOf(0, 168 - sleepWeekly - workWeek - maintWeek - activityWeekly)
+        val unfilled = maxOf(0, 168 - sleepWeekly - workWeek - maintWeek - customWeekly - activityWeekly)
 
         val allocation = WeekAllocationData(
             sleepHours = sleepWeekly,
             workHours = workWeek,
             maintenanceHours = maintWeek,
+            customNonNegotiableHours = customWeekly,
             quotaTargetHours = activityWeekly,
             unfilledHours = unfilled
         )
-        listOf(sleepNight, workWeek, maintWeek, allocation)
+        listOf(sleepNight, workWeek, maintWeek, customs, allocation)
     }
 
     val uiState: StateFlow<SettingsUiState> = combine(preferencesFlow, baselineFlow) { pref, base ->
@@ -72,11 +79,14 @@ class SettingsViewModel(
         val autoSort = pref[1] as Boolean
         val theme = pref[2] as String
         val checkIn = pref[3] as Boolean
+        val cardStyle = pref[4] as dev.seyone.quotatracker.data.model.QuotaCardStyle
 
         val sleepNight = base[0] as Int
         val workWeek = base[1] as Int
         val maintWeek = base[2] as Int
-        val allocation = base[3] as WeekAllocationData
+        @Suppress("UNCHECKED_CAST")
+        val customs = base[3] as List<dev.seyone.quotatracker.data.model.CustomNonNegotiable>
+        val allocation = base[4] as WeekAllocationData
 
         SettingsUiState(
             hapticFeedbackEnabled = haptic,
@@ -86,6 +96,8 @@ class SettingsViewModel(
             sleepHoursPerNight = sleepNight,
             workHoursPerWeek = workWeek,
             maintenanceHoursPerWeek = maintWeek,
+            cardStyle = cardStyle,
+            customNonNegotiables = customs,
             allocationData = allocation
         )
     }.stateIn(
@@ -138,6 +150,45 @@ class SettingsViewModel(
     fun setMaintenanceHoursPerWeek(hours: Int) {
         viewModelScope.launch {
             settingsRepository.setMaintenanceHoursPerWeek(hours)
+        }
+    }
+
+    fun setCardStyle(style: dev.seyone.quotatracker.data.model.QuotaCardStyle) {
+        viewModelScope.launch {
+            settingsRepository.setCardStyle(style)
+        }
+    }
+
+    fun addCustomNonNegotiable(name: String, emoji: String, hoursPerWeek: Int) {
+        viewModelScope.launch {
+            val current = uiState.value.customNonNegotiables.toMutableList()
+            current.add(
+                dev.seyone.quotatracker.data.model.CustomNonNegotiable(
+                    id = java.util.UUID.randomUUID().toString(),
+                    name = name,
+                    emoji = emoji,
+                    hoursPerWeek = hoursPerWeek
+                )
+            )
+            settingsRepository.setCustomNonNegotiables(current)
+        }
+    }
+
+    fun updateCustomNonNegotiable(item: dev.seyone.quotatracker.data.model.CustomNonNegotiable) {
+        viewModelScope.launch {
+            val current = uiState.value.customNonNegotiables.toMutableList()
+            val index = current.indexOfFirst { it.id == item.id }
+            if (index != -1) {
+                current[index] = item
+                settingsRepository.setCustomNonNegotiables(current)
+            }
+        }
+    }
+
+    fun deleteCustomNonNegotiable(id: String) {
+        viewModelScope.launch {
+            val current = uiState.value.customNonNegotiables.filterNot { it.id == id }
+            settingsRepository.setCustomNonNegotiables(current)
         }
     }
 

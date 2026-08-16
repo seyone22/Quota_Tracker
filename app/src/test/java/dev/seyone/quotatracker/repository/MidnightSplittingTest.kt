@@ -27,6 +27,8 @@ class MidnightSplittingTest {
         override fun getAllQuotas() = flowOf(emptyList<QuotaEntity>())
         override suspend fun insertQuota(quota: QuotaEntity): Long = 1L
         override suspend fun updateQuota(quota: QuotaEntity) {}
+        override suspend fun archiveQuota(quotaId: Int) {}
+        override suspend fun deleteQuotaById(quotaId: Int) {}
         override suspend fun deleteQuota(quota: QuotaEntity) {}
     }
 
@@ -55,6 +57,10 @@ class MidnightSplittingTest {
 
         override suspend fun deleteLogsByIds(ids: List<Long>) {
             insertedLogs.removeIf { ids.contains(it.id.toLong()) }
+        }
+
+        override suspend fun deleteLogsForQuota(quotaId: Int) {
+            insertedLogs.removeIf { it.quotaId == quotaId }
         }
 
         override fun getLogsForQuota(quotaId: Int) = flowOf(emptyList<LogEntryEntity>())

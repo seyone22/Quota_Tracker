@@ -26,6 +26,22 @@ class SettingsRepository(private val context: Context) {
         val KEY_HAS_SEEN_FAB_TOOLTIP = booleanPreferencesKey("has_seen_fab_tooltip")
         val KEY_HAS_SEEN_COMPLETION_TIP = booleanPreferencesKey("has_seen_completion_tip")
         val KEY_MAINTENANCE_HOURS_PER_WEEK = intPreferencesKey("maintenance_hours_per_week")
+        val KEY_CARD_STYLE = stringPreferencesKey("quota_card_style")
+        val KEY_CUSTOM_NON_NEGOTIABLES = stringPreferencesKey("custom_non_negotiables")
+    }
+
+    val customNonNegotiables: Flow<List<dev.seyone.quotatracker.data.model.CustomNonNegotiable>> = context.dataStore.data.map { preferences ->
+        val raw = preferences[KEY_CUSTOM_NON_NEGOTIABLES] ?: ""
+        dev.seyone.quotatracker.data.model.CustomNonNegotiable.listFromJsonString(raw)
+    }
+
+    val cardStyle: Flow<dev.seyone.quotatracker.data.model.QuotaCardStyle> = context.dataStore.data.map { preferences ->
+        val raw = preferences[KEY_CARD_STYLE] ?: dev.seyone.quotatracker.data.model.QuotaCardStyle.DUAL_TONE.name
+        try {
+            dev.seyone.quotatracker.data.model.QuotaCardStyle.valueOf(raw)
+        } catch (_: Exception) {
+            dev.seyone.quotatracker.data.model.QuotaCardStyle.DUAL_TONE
+        }
     }
 
     val hapticFeedbackEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -127,6 +143,18 @@ class SettingsRepository(private val context: Context) {
     suspend fun setHasSeenCompletionTip(seen: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_HAS_SEEN_COMPLETION_TIP] = seen
+        }
+    }
+
+    suspend fun setCardStyle(style: dev.seyone.quotatracker.data.model.QuotaCardStyle) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_CARD_STYLE] = style.name
+        }
+    }
+
+    suspend fun setCustomNonNegotiables(list: List<dev.seyone.quotatracker.data.model.CustomNonNegotiable>) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_CUSTOM_NON_NEGOTIABLES] = dev.seyone.quotatracker.data.model.CustomNonNegotiable.listToJsonString(list)
         }
     }
 }

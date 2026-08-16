@@ -10,12 +10,15 @@ import dev.seyone.quotatracker.data.repository.QuotaRepository
 import dev.seyone.quotatracker.data.repository.SettingsRepository
 import dev.seyone.quotatracker.ui.dashboard.components.WeekPulseData
 import dev.seyone.quotatracker.util.WeekUtils
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -55,7 +58,25 @@ class QuotaDashboardViewModel(
     val showAddDialog = MutableStateFlow(false)
     val editQuotaTarget = MutableStateFlow<QuotaEntity?>(null)
     val deleteQuotaTarget = MutableStateFlow<QuotaUiItem?>(null)
-    val manualOverrideQuota = MutableStateFlow<QuotaUiItem?>(null)
+    val cardStyle: StateFlow<dev.seyone.quotatracker.data.model.QuotaCardStyle> = settingsRepository.cardStyle
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = dev.seyone.quotatracker.data.model.QuotaCardStyle.DUAL_TONE
+        )
+
+    val adjustQuotaTarget = MutableStateFlow<QuotaUiItem?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val adjustQuotaRecentLogs: StateFlow<List<dev.seyone.quotatracker.data.local.entity.LogEntryEntity>> = adjustQuotaTarget
+        .flatMapLatest { item ->
+            if (item != null) repository.getLogsForQuota(item.quota.id) else flowOf(emptyList())
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     val hasSeenFabTooltip: StateFlow<Boolean> = settingsRepository.hasSeenFabTooltip
         .stateIn(
@@ -67,8 +88,6 @@ class QuotaDashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = repository.getQuotasWithCurrentWeekProgress()
         .map { list ->
             val items = list.map { createUiItem(it) }
-            // Sorting Rule: Unfinished quotas sat at the top, completed (>=100%) at bottom.
-            // Secondary sort: pinned first, then newest creation time.
             val sorted = items.sortedWith(
                 compareBy<QuotaUiItem> { it.isCompleted }
                     .thenByDescending { it.quota.isPinned }
@@ -120,16 +139,37 @@ class QuotaDashboardViewModel(
         )
     }
 
-    fun onQuickLog(quotaItem: QuotaUiItem, minutes: Int) {
+    fun onQuickLog(quotaItem: QuotaUiItem, minutesDelta: Int) {
         viewModelScope.launch {
-            val insertedIds = repository.addLog(quotaItem.quota.id, minutes)
-            val minutesStr = if (minutes >= 60) "${minutes / 60}h" else "${minutes}m"
-            _uiEvents.emit(
-                DashboardUiEvent.ShowUndoSnackbar(
-                    message = "Logged +$minutesStr to ${quotaItem.quota.title}",
-                    lastLogIds = insertedIds
+            if (minutesDelta > 0) {
+                val insertedIds = repository.addLog(quotaItem.quota.id, minutesDelta)
+                val minutesStr = if (minutesDelta >= 60) "${minutesDelta / 60}h" else "${minutesDelta}m"
+                _uiEvents.emit(
+                    DashboardUiEvent.ShowUndoSnackbar(
+                        message = "Logged +$minutesStr to ${quotaItem.quota.title}",
+                        lastLogIds = insertedIds
+                    )
                 )
-            )
+            } else if (minutesDelta < 0) {
+                val absMins = kotlin.math.abs(minutesDelta)
+                val insertedIds = repository.subtractLog(quotaItem.quota.id, absMins)
+                if (insertedIds.isNotEmpty()) {
+                    val minutesStr = if (absMins >= 60) "${absMins / 60}h" else "${absMins}m"
+                    _uiEvents.emit(
+                        DashboardUiEvent.ShowUndoSnackbar(
+                            message = "Deducted -$minutesStr from ${quotaItem.quota.title}",
+                            lastLogIds = insertedIds
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun onDeleteLogEntry(logId: Long) {
+        viewModelScope.launch {
+            repository.deleteLogById(logId)
+            _uiEvents.emit(DashboardUiEvent.ShowMessage("Log entry deleted"))
         }
     }
 
@@ -249,7 +289,7 @@ class QuotaDashboardViewModel(
         viewModelScope.launch {
             if (extraMinutes <= 0) return@launch
             val ids = repository.addLog(quotaId, extraMinutes)
-            manualOverrideQuota.value = null
+            adjustQuotaTarget.value = null
             val minStr = if (extraMinutes >= 60) "${extraMinutes / 60}h ${extraMinutes % 60}m" else "${extraMinutes}m"
             _uiEvents.emit(
                 DashboardUiEvent.ShowUndoSnackbar(
