@@ -261,13 +261,13 @@ private fun QuotaCard_DualTone(
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = formatHours(loggedMinutes),
+                        text = item.loggedHoursStr,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = " / ${formatHours(targetMinutes)} hrs",
+                        text = if (item.formattedProgressText.contains("hrs")) " / ${item.targetHoursStr} hrs" else " / ${item.targetHoursStr}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -447,7 +447,7 @@ private fun QuotaCard_SegmentedStepper(
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("${formatHours(loggedMinutes)} / ${formatHours(targetMinutes)} hrs", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                Text(item.formattedProgressText, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                 Text("$percentage%", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = if (overtimeMinutes > 0) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary)
             }
 
@@ -569,7 +569,7 @@ private fun QuotaCard_GlowBanner(
                 }
             }
 
-            Text("${formatHours(loggedMinutes)} / ${formatHours(targetMinutes)} hrs logged", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("${item.formattedProgressText} logged", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Box(modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
                 Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(fraction = progressFraction).background(Brush.horizontalGradient(if (overtimeMinutes > 0) listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary) else listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))))

@@ -12,8 +12,8 @@ android {
         applicationId = "dev.seyone.quotatracker"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.5.0-alpha"
+        versionCode = 6
+        versionName = "1.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

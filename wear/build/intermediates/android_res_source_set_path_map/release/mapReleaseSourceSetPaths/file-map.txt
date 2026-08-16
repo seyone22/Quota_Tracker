@@ -1,0 +1,7 @@
+dev.seyone.quotatracker.wear-updated_navigation_xml-0 C:\Users\SGSey\StudioProjects\Quota\wear\build\generated\updated_navigation_xml\release
+dev.seyone.quotatracker.wear-packageReleaseResources-1 C:\Users\SGSey\StudioProjects\Quota\wear\build\intermediates\incremental\release\packageReleaseResources\merged.dir
+dev.seyone.quotatracker.wear-packageReleaseResources-2 C:\Users\SGSey\StudioProjects\Quota\wear\build\intermediates\incremental\release\packageReleaseResources\stripped.dir
+dev.seyone.quotatracker.wear-release-3 C:\Users\SGSey\StudioProjects\Quota\wear\build\intermediates\merged_res\release\mergeReleaseResources
+dev.seyone.quotatracker.wear-main-4 C:\Users\SGSey\StudioProjects\Quota\wear\src\main\res
+dev.seyone.quotatracker.wear-release-5 C:\Users\SGSey\StudioProjects\Quota\wear\src\release\res
+gradleHome-0 C:\Users\SGSey\.gradle

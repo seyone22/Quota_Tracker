@@ -87,14 +87,26 @@ class MainActivity : ComponentActivity() {
         DataBackupManager(this, (application as QuotaApplication).database)
     }
 
-    @OptIn(ExperimentalMaterial3AdaptiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        handleShortcutIntent(intent)
+
         setContent {
             val settingsRepository = (application as QuotaApplication).settingsRepository
             val themeMode by settingsRepository.themeMode.collectAsState(initial = "SYSTEM")
             val hasCompletedOnboarding by settingsRepository.hasCompletedOnboarding.collectAsState(initial = true)
+
+            // Dynamic launcher shortcut auto-update
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                val repo = (application as QuotaApplication).repository
+                repo.getQuotasWithCurrentWeekProgress().collect { list ->
+                    val topPinned = list.filter { it.quota.isPinned }.maxByOrNull { it.quota.createdAt }?.quota
+                        ?: list.firstOrNull()?.quota
+                    dev.seyone.quotatracker.util.DynamicShortcutManager.updateTopPinnedGoalShortcut(applicationContext, topPinned)
+                }
+            }
 
             QuotaTrackerTheme(themeMode = themeMode) {
                 val scope = rememberCoroutineScope()
@@ -313,6 +325,34 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShortcutIntent(intent)
+    }
+
+    private fun handleShortcutIntent(intent: android.content.Intent?) {
+        val action = intent?.action ?: return
+        when (action) {
+            "dev.seyone.quotatracker.ACTION_ADD_GOAL" -> {
+                dashboardViewModel.showAddDialog.value = true
+            }
+            "dev.seyone.quotatracker.ACTION_QUICK_LOG" -> {
+                val items = dashboardViewModel.uiState.value.quotaItems
+                val topItem = items.firstOrNull { it.quota.isPinned } ?: items.firstOrNull()
+                topItem?.let { dashboardViewModel.onQuickLog(it, 15) }
+            }
+            "dev.seyone.quotatracker.ACTION_LOG_GOAL" -> {
+                val quotaId = intent.getIntExtra("quota_id", -1)
+                if (quotaId != -1) {
+                    val items = dashboardViewModel.uiState.value.quotaItems
+                    val item = items.firstOrNull { it.quota.id == quotaId }
+                    item?.let { dashboardViewModel.onQuickLog(it, 15) }
                 }
             }
         }

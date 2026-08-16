@@ -1,0 +1,38 @@
+{
+    "logs": [
+        {
+            "outputFile": "dev.seyone.quotatracker.wear-mergeDebugResources-71:/values-v24/values-v24.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\b6c8a577c12be0467e84bc442c174b5a\\transformed\\wear-1.3.0\\res\\values-v24\\values-v24.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "14",
+                        "endColumns": "12",
+                        "endOffsets": "929"
+                    },
+                    "to": {
+                        "startLines": "4",
+                        "startColumns": "4",
+                        "startOffsets": "347",
+                        "endLines": "16",
+                        "endColumns": "12",
+                        "endOffsets": "1221"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\9e7f2c44846f43b9dc3b3430549d847e\\transformed\\appcompat-1.1.0\\res\\values-v24\\values-v24.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,212",
+                        "endColumns": "156,134",
+                        "endOffsets": "207,342"
+                    }
+                }
+            ]
+        }
+    ]
+}

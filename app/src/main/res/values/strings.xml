@@ -2,17 +2,25 @@
     <string name="app_name">Quota Tracker</string>
 
     <!-- Versioning & Release Info -->
-    <string name="app_version_name">1.5.0-alpha</string>
-    <integer name="app_version_code">5</integer>
+    <string name="app_version_name">1.5.1</string>
+    <integer name="app_version_code">6</integer>
     <string name="app_release_date">Aug 16, 2026</string>
-    <string name="app_full_build_info">Alpha 1.5.0-alpha (Aug 16, 2026)</string>
+    <string name="app_full_build_info">v1.5.1 (Build 6 • Aug 16, 2026)</string>
 
     <string-array name="whats_new_highlights">
-        <item>Android Home Screen Glance Widget with dynamic opacity, theme modes (Light, Dark, Glass), and shape radiuses</item>
-        <item>Multi-select Goal Switches with All Goals master toggle for customizable widget filtering</item>
-        <item>Precise Time Toggle (Show precise time eg. 1h 15m vs 1.25 hrs decimal mode)</item>
+        <item>App Launcher Quick Shortcuts (Log Progress, New Goal, Week Pace, Dynamic Pinned Goal)</item>
+        <item>Fixed Precise Time Toggle across all dashboard card styles (1h 15m vs 1.25 hrs)</item>
+        <item>Immutable History Log ledger (removed accidental log deletion capabilities)</item>
+        <item>Android Home Screen Glance Widget with dynamic opacity, theme modes, and shape radiuses</item>
         <item>Visual Pinned Star Badge overlay on circular goal icon containers</item>
-        <item>Dynamic Light and Dark Launcher Widget preview matching system themes</item>
         <item>Performance optimizations, bug fixes, and Material 3 Expressive UI polish</item>
     </string-array>
+
+    <!-- Launcher Shortcuts -->
+    <string name="shortcut_quick_log_short">Log Progress</string>
+    <string name="shortcut_quick_log_long">Log Progress (+15m)</string>
+    <string name="shortcut_add_goal_short">New Goal</string>
+    <string name="shortcut_add_goal_long">Create New Goal</string>
+    <string name="shortcut_week_pulse_short">Week Pace</string>
+    <string name="shortcut_week_pulse_long">168h Week Pace Breakdown</string>
 </resources>

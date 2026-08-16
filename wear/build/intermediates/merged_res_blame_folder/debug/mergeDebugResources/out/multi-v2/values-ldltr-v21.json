@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "dev.seyone.quotatracker.wear-mergeDebugResources-71:/values-ldltr-v21/values-ldltr-v21.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\9e7f2c44846f43b9dc3b3430549d847e\\transformed\\appcompat-1.1.0\\res\\values-ldltr-v21\\values-ldltr-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "112",
+                        "endOffsets": "163"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "dev.seyone.quotatracker.wear-mergeReleaseResources-71:/values-sw360dp-v13/values-sw360dp-v13.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\956d4a3433fbf8a52eeacdbdebd13fe1\\transformed\\preference-1.1.0\\res\\values-sw360dp-v13\\values-sw360dp-v13.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "71",
+                        "endOffsets": "122"
+                    }
+                }
+            ]
+        }
+    ]
+}

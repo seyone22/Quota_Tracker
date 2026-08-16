@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "dev.seyone.quotatracker.wear-mergeReleaseResources-71:/values-watch-v20/values-watch-v20.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\9e7f2c44846f43b9dc3b3430549d847e\\transformed\\appcompat-1.1.0\\res\\values-watch-v20\\values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,5,8",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,214,385",
+                        "endLines": "4,7,10",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "209,380,553"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="shortcut_quick_log"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_quick_log"
+        android:shortcutShortLabel="@string/shortcut_quick_log_short"
+        android:shortcutLongLabel="@string/shortcut_quick_log_long">
+        <intent
+            android:action="dev.seyone.quotatracker.ACTION_QUICK_LOG"
+            android:targetClass="dev.seyone.quotatracker.ui.MainActivity"
+            android:targetPackage="dev.seyone.quotatracker" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_add_goal"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_add_goal"
+        android:shortcutShortLabel="@string/shortcut_add_goal_short"
+        android:shortcutLongLabel="@string/shortcut_add_goal_long">
+        <intent
+            android:action="dev.seyone.quotatracker.ACTION_ADD_GOAL"
+            android:targetClass="dev.seyone.quotatracker.ui.MainActivity"
+            android:targetPackage="dev.seyone.quotatracker" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_week_pulse"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_week_pulse"
+        android:shortcutShortLabel="@string/shortcut_week_pulse_short"
+        android:shortcutLongLabel="@string/shortcut_week_pulse_long">
+        <intent
+            android:action="dev.seyone.quotatracker.ACTION_VIEW_PULSE"
+            android:targetClass="dev.seyone.quotatracker.ui.MainActivity"
+            android:targetPackage="dev.seyone.quotatracker" />
+    </shortcut>
+
+</shortcuts>

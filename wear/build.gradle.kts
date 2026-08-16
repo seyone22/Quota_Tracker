@@ -11,8 +11,8 @@ android {
         applicationId = "dev.seyone.quotatracker"
         minSdk = 30
         targetSdk = 37
-        versionCode = 20005
-        versionName = "1.5.0-alpha"
+        versionCode = 6
+        versionName = "1.5.1"
         vectorDrawables {
             useSupportLibrary = true
         }

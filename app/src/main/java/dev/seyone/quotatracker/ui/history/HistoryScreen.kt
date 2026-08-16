@@ -168,10 +168,7 @@ fun HistoryScreen(
                                 items = dayGroup.logs,
                                 key = { it.logId }
                             ) { logItem ->
-                                AgendaLogRow(
-                                    item = logItem,
-                                    onDeleteClick = { viewModel.deleteLogEntry(logItem.logId) }
-                                )
+                                AgendaLogRow(item = logItem)
                             }
                         }
                     }
@@ -183,8 +180,7 @@ fun HistoryScreen(
 
 @Composable
 fun AgendaLogRow(
-    item: AgendaLogUiItem,
-    onDeleteClick: () -> Unit
+    item: AgendaLogUiItem
 ) {
     Card(
         modifier = Modifier
@@ -225,18 +221,6 @@ fun AgendaLogRow(
                 color = if (item.isPositive) Color(0xFF4CAF50) else Color(0xFFE53935),
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
-
-            IconButton(
-                onClick = onDeleteClick,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete log entry",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.size(18.dp)
-                )
-            }
         }
     }
 }

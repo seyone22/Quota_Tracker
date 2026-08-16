@@ -31,7 +31,9 @@ data class QuotaUiItem(
     val targetMinutes: Int,
     val progressFraction: Float,
     val isCompleted: Boolean,
-    val formattedProgressText: String
+    val formattedProgressText: String,
+    val loggedHoursStr: String = "",
+    val targetHoursStr: String = ""
 )
 
 data class DashboardUiState(
@@ -325,7 +327,9 @@ class QuotaDashboardViewModel(
             targetMinutes = target,
             progressFraction = fraction,
             isCompleted = isCompleted,
-            formattedProgressText = progressText
+            formattedProgressText = progressText,
+            loggedHoursStr = loggedHoursStr,
+            targetHoursStr = targetHoursStr
         )
     }
 
