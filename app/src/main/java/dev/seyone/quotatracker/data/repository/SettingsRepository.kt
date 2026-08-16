@@ -27,7 +27,12 @@ class SettingsRepository(private val context: Context) {
         val KEY_HAS_SEEN_COMPLETION_TIP = booleanPreferencesKey("has_seen_completion_tip")
         val KEY_MAINTENANCE_HOURS_PER_WEEK = intPreferencesKey("maintenance_hours_per_week")
         val KEY_CARD_STYLE = stringPreferencesKey("quota_card_style")
+        val KEY_SHOW_PRECISE_TIME = booleanPreferencesKey("show_precise_time")
         val KEY_CUSTOM_NON_NEGOTIABLES = stringPreferencesKey("custom_non_negotiables")
+    }
+
+    val showPreciseTime: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[KEY_SHOW_PRECISE_TIME] ?: false
     }
 
     val customNonNegotiables: Flow<List<dev.seyone.quotatracker.data.model.CustomNonNegotiable>> = context.dataStore.data.map { preferences ->
@@ -149,6 +154,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setCardStyle(style: dev.seyone.quotatracker.data.model.QuotaCardStyle) {
         context.dataStore.edit { preferences ->
             preferences[KEY_CARD_STYLE] = style.name
+        }
+    }
+
+    suspend fun setShowPreciseTime(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_SHOW_PRECISE_TIME] = enabled
         }
     }
 

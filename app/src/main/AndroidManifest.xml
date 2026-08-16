@@ -51,6 +51,17 @@
             </intent-filter>
         </service>
 
+        <!-- Widget Settings Configuration Activity -->
+        <activity
+            android:name=".ui.widget.WidgetSettingsActivity"
+            android:exported="true"
+            android:label="Widget Settings"
+            android:theme="@style/Theme.QuotaTracker">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Home Screen Glance Widget Receiver -->
         <receiver
             android:name=".widget.QuotaGlanceWidgetReceiver"

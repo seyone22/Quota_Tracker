@@ -29,19 +29,25 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.compose.ui.graphics.Color
+import androidx.glance.appwidget.cornerRadius
 import dev.seyone.quotatracker.QuotaApplication
 import dev.seyone.quotatracker.data.local.model.QuotaWithProgress
+import dev.seyone.quotatracker.data.repository.WidgetSettings
+import dev.seyone.quotatracker.data.repository.WidgetSettingsRepository
 
 class QuotaGlanceWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val app = context.applicationContext as QuotaApplication
         val repo = app.repository
+        val widgetSettingsRepo = WidgetSettingsRepository(context.applicationContext)
 
         provideContent {
             GlanceTheme {
                 val quotasWithProgress by repo.getQuotasWithCurrentWeekProgress().collectAsState(initial = emptyList())
-                
+                val widgetSettings by widgetSettingsRepo.widgetSettings.collectAsState(initial = WidgetSettings())
+
                 // Identical 3-tier sorting rule:
                 // 1. Unfinished (<100%) at top, Completed (>=100%) at bottom.
                 // 2. Pinned items first.
@@ -52,18 +58,45 @@ class QuotaGlanceWidget : GlanceAppWidget() {
                         .thenByDescending { it.quota.createdAt }
                 )
 
-                WidgetContent(sortedQuotas)
+                val filteredList = if (widgetSettings.selectedQuotaIds.isEmpty()) {
+                    sortedQuotas
+                } else {
+                    sortedQuotas.filter { it.quota.id in widgetSettings.selectedQuotaIds }
+                }
+
+                WidgetContent(filteredList, widgetSettings)
             }
         }
     }
 
     @Composable
-    private fun WidgetContent(list: List<QuotaWithProgress>) {
+    private fun WidgetContent(list: List<QuotaWithProgress>, settings: WidgetSettings) {
+        val baseBgColor = when (settings.themeMode) {
+            "DARK" -> Color(0xFF1E1E24)
+            "LIGHT" -> Color(0xFFF5F5FA)
+            "GLASS" -> Color(0xFFFFFFFF)
+            else -> Color(0xFF2C2B30)
+        }
+        val widgetBgColor = baseBgColor.copy(alpha = settings.opacity)
+
+        val mainTextColor = when (settings.themeMode) {
+            "LIGHT" -> androidx.glance.unit.ColorProvider(Color(0xFF1C1B20))
+            "DARK", "GLASS" -> androidx.glance.unit.ColorProvider(Color(0xFFFFFFFF))
+            else -> GlanceTheme.colors.onSurface
+        }
+
+        val subTextColor = when (settings.themeMode) {
+            "LIGHT" -> androidx.glance.unit.ColorProvider(Color(0xFF49454F))
+            "DARK", "GLASS" -> androidx.glance.unit.ColorProvider(Color(0xFFCAC4D0))
+            else -> GlanceTheme.colors.onSurfaceVariant
+        }
+
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .background(GlanceTheme.colors.surfaceVariant),
+                .cornerRadius(settings.cornerRadiusDp.dp)
+                .background(widgetBgColor),
             verticalAlignment = Alignment.Top,
             horizontalAlignment = Alignment.Start
         ) {
@@ -84,7 +117,7 @@ class QuotaGlanceWidget : GlanceAppWidget() {
                     text = "No quotas set up",
                     style = TextStyle(
                         fontSize = 12.sp,
-                        color = GlanceTheme.colors.onSurfaceVariant
+                        color = subTextColor
                     )
                 )
             } else {
@@ -98,7 +131,7 @@ class QuotaGlanceWidget : GlanceAppWidget() {
                     val isCompleted = logged >= target
                     val progressFraction = (logged.toFloat() / target.toFloat()).coerceIn(0.0f, 1.0f)
 
-                    val titleColor = if (isCompleted) GlanceTheme.colors.tertiary else GlanceTheme.colors.onSurface
+                    val titleColor = if (isCompleted) GlanceTheme.colors.tertiary else mainTextColor
 
                     Column(modifier = GlanceModifier.fillMaxWidth()) {
                         Row(
@@ -129,14 +162,14 @@ class QuotaGlanceWidget : GlanceAppWidget() {
                                     text = "$loggedStr / $targetStr",
                                     style = TextStyle(
                                         fontSize = 11.sp,
-                                        color = GlanceTheme.colors.onSurfaceVariant
+                                        color = subTextColor
                                     )
                                 )
                             }
 
                             Spacer(modifier = GlanceModifier.width(8.dp))
 
-                            if (!isCompleted) {
+                            if (settings.showQuickLogButtons && !isCompleted) {
                                 Button(
                                     text = "+15m",
                                     onClick = actionRunCallback<LogTimeActionCallback>(
@@ -146,7 +179,7 @@ class QuotaGlanceWidget : GlanceAppWidget() {
                                         )
                                     )
                                 )
-                            } else {
+                            } else if (isCompleted) {
                                 Text(
                                     text = "Done ✓",
                                     style = TextStyle(

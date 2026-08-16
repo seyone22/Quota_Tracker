@@ -26,6 +26,7 @@ import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -52,8 +53,11 @@ fun CardStyleSelectionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentStyle = uiState.cardStyle
+    val showPreciseTime = uiState.showPreciseTime
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+
+    val sampleProgressText = if (showPreciseTime) "5h 45m / 4h 30m" else "5.75 / 4.5 hrs"
 
     // Mock item with overtime to showcase full expressive card capabilities
     val sampleQuota = QuotaEntity(
@@ -69,7 +73,7 @@ fun CardStyleSelectionScreen(
         targetMinutes = 270,
         progressFraction = 1.0f,
         isCompleted = true,
-        formattedProgressText = "5.8 / 4.5 hrs"
+        formattedProgressText = sampleProgressText
     )
 
     Scaffold(
@@ -101,6 +105,44 @@ fun CardStyleSelectionScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // Precise Time Toggle Option Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.setShowPreciseTime(!showPreciseTime) }
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(
+                            text = "Show precise time",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (showPreciseTime) "Displaying e.g. 1h 15m (hours & mins)" else "Displaying e.g. 1.25 hrs (decimal hours)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Switch(
+                        checked = showPreciseTime,
+                        onCheckedChange = { viewModel.setShowPreciseTime(it) }
+                    )
+                }
+            }
+
             // Header instructions card
             Card(
                 modifier = Modifier.fillMaxWidth(),

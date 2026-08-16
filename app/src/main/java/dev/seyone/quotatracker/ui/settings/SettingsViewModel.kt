@@ -25,6 +25,7 @@ data class SettingsUiState(
     val workHoursPerWeek: Int = 40,
     val maintenanceHoursPerWeek: Int = 14,
     val cardStyle: dev.seyone.quotatracker.data.model.QuotaCardStyle = dev.seyone.quotatracker.data.model.QuotaCardStyle.DUAL_TONE,
+    val showPreciseTime: Boolean = false,
     val customNonNegotiables: List<dev.seyone.quotatracker.data.model.CustomNonNegotiable> = emptyList(),
     val allocationData: WeekAllocationData = WeekAllocationData(
         sleepHours = 56,
@@ -41,7 +42,7 @@ class SettingsViewModel(
     private val quotaRepository: QuotaRepository? = null
 ) : ViewModel() {
 
-    private val preferencesFlow = combine(
+    private val prefs1 = combine(
         settingsRepository.hapticFeedbackEnabled,
         settingsRepository.autoSortCompleted,
         settingsRepository.themeMode,
@@ -49,6 +50,13 @@ class SettingsViewModel(
         settingsRepository.cardStyle
     ) { haptic, autoSort, theme, checkIn, cardStyle ->
         listOf(haptic, autoSort, theme, checkIn, cardStyle)
+    }
+
+    private val preferencesFlow = combine(
+        prefs1,
+        settingsRepository.showPreciseTime
+    ) { p1, precise ->
+        listOf(p1[0], p1[1], p1[2], p1[3], p1[4], precise)
     }
 
     private val baselineFlow = combine(
@@ -80,6 +88,7 @@ class SettingsViewModel(
         val theme = pref[2] as String
         val checkIn = pref[3] as Boolean
         val cardStyle = pref[4] as dev.seyone.quotatracker.data.model.QuotaCardStyle
+        val showPrecise = pref[5] as Boolean
 
         val sleepNight = base[0] as Int
         val workWeek = base[1] as Int
@@ -97,6 +106,7 @@ class SettingsViewModel(
             workHoursPerWeek = workWeek,
             maintenanceHoursPerWeek = maintWeek,
             cardStyle = cardStyle,
+            showPreciseTime = showPrecise,
             customNonNegotiables = customs,
             allocationData = allocation
         )
@@ -156,6 +166,12 @@ class SettingsViewModel(
     fun setCardStyle(style: dev.seyone.quotatracker.data.model.QuotaCardStyle) {
         viewModelScope.launch {
             settingsRepository.setCardStyle(style)
+        }
+    }
+
+    fun setShowPreciseTime(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setShowPreciseTime(enabled)
         }
     }
 

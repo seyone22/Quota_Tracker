@@ -65,6 +65,13 @@ class QuotaDashboardViewModel(
             initialValue = dev.seyone.quotatracker.data.model.QuotaCardStyle.DUAL_TONE
         )
 
+    val showPreciseTime: StateFlow<Boolean> = settingsRepository.showPreciseTime
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
     val adjustQuotaTarget = MutableStateFlow<QuotaUiItem?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -85,24 +92,26 @@ class QuotaDashboardViewModel(
             initialValue = true
         )
 
-    val uiState: StateFlow<DashboardUiState> = repository.getQuotasWithCurrentWeekProgress()
-        .map { list ->
-            val items = list.map { createUiItem(it) }
-            val sorted = items.sortedWith(
-                compareBy<QuotaUiItem> { it.isCompleted }
-                    .thenByDescending { it.quota.isPinned }
-                    .thenByDescending { it.quota.createdAt }
-            )
+    val uiState: StateFlow<DashboardUiState> = kotlinx.coroutines.flow.combine(
+        repository.getQuotasWithCurrentWeekProgress(),
+        settingsRepository.showPreciseTime
+    ) { list, precise ->
+        val items = list.map { createUiItem(it, precise) }
+        val sorted = items.sortedWith(
+            compareBy<QuotaUiItem> { it.isCompleted }
+                .thenByDescending { it.quota.isPinned }
+                .thenByDescending { it.quota.createdAt }
+        )
 
-            val pulseData = calculateWeekPulse(items)
+        val pulseData = calculateWeekPulse(items)
 
-            DashboardUiState(
-                quotaItems = sorted,
-                pulseData = pulseData,
-                isLoading = false,
-                currentWeekText = WeekUtils.getWeekString()
-            )
-        }
+        DashboardUiState(
+            quotaItems = sorted,
+            pulseData = pulseData,
+            isLoading = false,
+            currentWeekText = WeekUtils.getWeekString()
+        )
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -300,15 +309,15 @@ class QuotaDashboardViewModel(
         }
     }
 
-    private fun createUiItem(model: QuotaWithProgress): QuotaUiItem {
+    private fun createUiItem(model: QuotaWithProgress, showPreciseTime: Boolean = false): QuotaUiItem {
         val target = model.quota.targetMinutes.coerceAtLeast(1)
         val logged = model.loggedMinutes.coerceAtLeast(0)
         val fraction = (logged.toFloat() / target.toFloat()).coerceAtMost(1.0f)
         val isCompleted = logged >= target
 
-        val loggedHoursStr = formatHours(logged)
-        val targetHoursStr = formatHours(target)
-        val progressText = "$loggedHoursStr / $targetHoursStr hrs"
+        val loggedHoursStr = formatTime(logged, showPreciseTime)
+        val targetHoursStr = formatTime(target, showPreciseTime)
+        val progressText = if (showPreciseTime) "$loggedHoursStr / $targetHoursStr" else "$loggedHoursStr / $targetHoursStr hrs"
 
         return QuotaUiItem(
             quota = model.quota,
@@ -320,12 +329,22 @@ class QuotaDashboardViewModel(
         )
     }
 
-    private fun formatHours(minutes: Int): String {
-        val hours = minutes / 60.0
-        return if (hours % 1.0 == 0.0) {
-            String.format(Locale.getDefault(), "%.0f", hours)
+    private fun formatTime(minutes: Int, showPreciseTime: Boolean): String {
+        return if (showPreciseTime) {
+            val hrs = minutes / 60
+            val mins = minutes % 60
+            when {
+                hrs > 0 && mins > 0 -> "${hrs}h ${mins}m"
+                hrs > 0 -> "${hrs}h"
+                else -> "${mins}m"
+            }
         } else {
-            String.format(Locale.getDefault(), "%.1f", hours)
+            val hours = minutes / 60.0
+            when {
+                hours % 1.0 == 0.0 -> String.format(Locale.getDefault(), "%.0f", hours)
+                (hours * 10) % 1.0 == 0.0 -> String.format(Locale.getDefault(), "%.1f", hours)
+                else -> String.format(Locale.getDefault(), "%.2f", hours)
+            }
         }
     }
 
