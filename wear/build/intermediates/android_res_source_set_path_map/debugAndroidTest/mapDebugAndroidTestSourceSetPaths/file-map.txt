@@ -1,5 +1,0 @@
-dev.seyone.quotatracker.wear.test.wear-updated_navigation_xml-0 C:\Users\SGSey\StudioProjects\Quota\wear\build\generated\updated_navigation_xml\debugAndroidTest
-dev.seyone.quotatracker.wear.test.wear-packageDebugAndroidTestResources-1 C:\Users\SGSey\StudioProjects\Quota\wear\build\intermediates\incremental\debugAndroidTest\packageDebugAndroidTestResources\merged.dir
-dev.seyone.quotatracker.wear.test.wear-packageDebugAndroidTestResources-2 C:\Users\SGSey\StudioProjects\Quota\wear\build\intermediates\incremental\debugAndroidTest\packageDebugAndroidTestResources\stripped.dir
-dev.seyone.quotatracker.wear.test.wear-debugAndroidTest-3 C:\Users\SGSey\StudioProjects\Quota\wear\build\intermediates\merged_res\debugAndroidTest\mergeDebugAndroidTestResources
-gradleHome-0 C:\Users\SGSey\.gradle
