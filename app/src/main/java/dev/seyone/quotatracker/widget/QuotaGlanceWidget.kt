@@ -10,6 +10,9 @@ import androidx.glance.Button
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
+import androidx.glance.layout.size
 import androidx.glance.action.actionParametersOf
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -149,9 +152,11 @@ class QuotaGlanceWidget : GlanceAppWidget() {
                                         )
                                     )
                                     if (item.quota.isPinned) {
-                                        Text(
-                                            text = " 📌",
-                                            style = TextStyle(fontSize = 10.sp)
+                                        Spacer(modifier = GlanceModifier.width(4.dp))
+                                        Image(
+                                            provider = ImageProvider(dev.seyone.quotatracker.R.drawable.ic_pin),
+                                            contentDescription = "Pinned",
+                                            modifier = GlanceModifier.size(12.dp)
                                         )
                                     }
                                 }

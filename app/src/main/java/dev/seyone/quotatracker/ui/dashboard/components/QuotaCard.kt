@@ -7,6 +7,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,13 +16,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -175,43 +181,22 @@ private fun QuotaCard_DualTone(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                if (overtimeMinutes > 0) MaterialTheme.colorScheme.tertiaryContainer
-                                else MaterialTheme.colorScheme.primaryContainer
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val iconVector = QuotaIconRegistry.getIcon(item.quota.iconKey) ?: Icons.Default.AutoAwesome
-                        Icon(
-                            imageVector = iconVector,
-                            contentDescription = null,
-                            tint = if (overtimeMinutes > 0) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
+                    QuotaIconBadge(
+                        iconKey = item.quota.iconKey,
+                        isPinned = item.quota.isPinned,
+                        isOvertime = overtimeMinutes > 0,
+                        sizeDp = 44.dp,
+                        iconSizeDp = 22.dp,
+                        shape = CircleShape
+                    )
 
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = item.quota.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            if (item.quota.isPinned) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.PushPin,
-                                    contentDescription = "Pinned",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
+                        Text(
+                            text = item.quota.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Text(
                             text = if (overtimeMinutes > 0) "Overtime Active" else item.quota.resetStrategy.name.lowercase().replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.labelSmall,
@@ -426,16 +411,14 @@ private fun QuotaCard_SegmentedStepper(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.secondaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val iconVector = QuotaIconRegistry.getIcon(item.quota.iconKey) ?: Icons.Default.FitnessCenter
-                        Icon(iconVector, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(20.dp))
-                    }
+                    QuotaIconBadge(
+                        iconKey = item.quota.iconKey,
+                        isPinned = item.quota.isPinned,
+                        isOvertime = overtimeMinutes > 0,
+                        sizeDp = 40.dp,
+                        iconSizeDp = 20.dp,
+                        shape = CircleShape
+                    )
 
                     Text(text = item.quota.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                 }
@@ -560,10 +543,14 @@ private fun QuotaCard_GlowBanner(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                        val iconVector = QuotaIconRegistry.getIcon(item.quota.iconKey) ?: Icons.Default.MusicNote
-                        Icon(iconVector, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    }
+                    QuotaIconBadge(
+                        iconKey = item.quota.iconKey,
+                        isPinned = item.quota.isPinned,
+                        isOvertime = overtimeMinutes > 0,
+                        sizeDp = 40.dp,
+                        iconSizeDp = 20.dp,
+                        shape = CircleShape
+                    )
                     Text(item.quota.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                 }
 
@@ -589,8 +576,8 @@ private fun QuotaCard_GlowBanner(
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { isDeductMode = !isDeductMode }, modifier = Modifier.size(40.dp).clip(CircleShape).background(if (isDeductMode) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceContainerHighest)) {
-                    Icon(imageVector = if (isDeductMode) Icons.Default.Remove else Icons.Default.Add, contentDescription = null, tint = if (isDeductMode) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                IconButton(onClick = { isDeductMode = !isDeductMode }, modifier = Modifier.size(40.dp).clip(CircleShape).background(if (!isDeductMode) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                    Icon(imageVector = if (!isDeductMode) Icons.Default.Remove else Icons.Default.Add, contentDescription = null, tint = if (!isDeductMode) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                 }
 
                 val deltas = if (isDeductMode) listOf(-15, -30, -60) else listOf(15, 30, 60)
@@ -621,5 +608,57 @@ private fun formatHoursShort(minutes: Int): String {
         hrs > 0 && mins > 0 -> "${hrs}h ${mins}m"
         hrs > 0 -> "${hrs}h"
         else -> "${mins}m"
+    }
+}
+
+@Composable
+private fun QuotaIconBadge(
+    iconKey: String?,
+    isPinned: Boolean,
+    isOvertime: Boolean,
+    modifier: Modifier = Modifier,
+    sizeDp: Dp = 44.dp,
+    iconSizeDp: Dp = 22.dp,
+    shape: Shape = CircleShape
+) {
+    Box(modifier = modifier.size(sizeDp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape)
+                .background(
+                    if (isOvertime) MaterialTheme.colorScheme.tertiaryContainer
+                    else MaterialTheme.colorScheme.primaryContainer
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            val iconVector = QuotaIconRegistry.getIcon(iconKey) ?: Icons.Default.AutoAwesome
+            Icon(
+                imageVector = iconVector,
+                contentDescription = null,
+                tint = if (isOvertime) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(iconSizeDp)
+            )
+        }
+
+        if (isPinned) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 2.dp, y = (-2).dp)
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .border(1.5.dp, MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Pinned",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(9.dp)
+                )
+            }
+        }
     }
 }
