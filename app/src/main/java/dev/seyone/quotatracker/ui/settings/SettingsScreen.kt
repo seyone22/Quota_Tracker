@@ -127,7 +127,7 @@ fun SettingsScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Version 1.0.0",
+                    text = "Version ${androidx.compose.ui.res.stringResource(id = dev.seyone.quotatracker.R.string.app_version_name)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

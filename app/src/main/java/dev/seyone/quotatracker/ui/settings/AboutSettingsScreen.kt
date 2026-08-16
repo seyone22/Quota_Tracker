@@ -56,6 +56,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
+import dev.seyone.quotatracker.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutSettingsScreen(
@@ -72,6 +76,10 @@ fun AboutSettingsScreen(
     val privacyPolicyUrl = "https://github.com/seyone22/Quota_Tracker/blob/master/PRIVACY_POLICY.md"
     val websiteUrl = "https://seyone.dev"
     val devEmail = "hi@seyone.dev"
+
+    val versionName = stringResource(id = R.string.app_version_name)
+    val buildInfo = stringResource(id = R.string.app_full_build_info)
+    val whatsNewList = stringArrayResource(id = R.array.whats_new_highlights)
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -131,7 +139,7 @@ fun AboutSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Created by Seyone Gunasinghamv",
+                    text = "Created by Seyone Gunasingham",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -145,9 +153,9 @@ fun AboutSettingsScreen(
             SettingsClickableItem(
                 icon = Icons.Outlined.SystemUpdate,
                 title = "Version",
-                subtitle = "Alpha 1.4.0 (Jul 29, 2026)",
+                subtitle = buildInfo,
                 onClick = {
-                    Toast.makeText(context, "Quota Tracker v1.4.0 Alpha Build", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Quota Tracker v$versionName Alpha Build", Toast.LENGTH_SHORT).show()
                 }
             )
 
@@ -208,13 +216,12 @@ fun AboutSettingsScreen(
     if (showWhatsNewDialog) {
         AlertDialog(
             onDismissRequest = { showWhatsNewDialog = false },
-            title = { Text("What's New in v1.0.0") },
+            title = { Text("What's New in v$versionName") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Week Pulse Card: Custom horizontal stacked bars for macro & micro pace tracking.")
-                    Text("168h Week Allocation Bar: Visual breakdown of Sleep, Work, Maintenance, and Quotas.")
-                    Text("3-Screen Onboarding: Interactive baseline setup for friction-free setup.")
-                    Text("Wear OS Instant Sync: Seamless smartwatch companion app.")
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    whatsNewList.forEach { item ->
+                        Text("• $item", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             },
             confirmButton = {
