@@ -36,11 +36,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,19 +66,21 @@ fun AboutSettingsScreen(
     var showLicensesDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+
     val githubUrl = "https://github.com/seyone22/Quota_Tracker"
     val privacyPolicyUrl = "https://github.com/seyone22/Quota_Tracker/blob/master/PRIVACY_POLICY.md"
     val websiteUrl = "https://seyone.dev"
     val devEmail = "hi@seyone.dev"
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            MediumFlexibleTopAppBar(
+                scrollBehavior = scrollBehavior,
                 title = {
                     Text(
                         text = "About",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
                     )
                 },
                 navigationIcon = {
@@ -102,25 +107,16 @@ fun AboutSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 32.dp),
+                    .padding(vertical = 0.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.HourglassEmpty,
-                        contentDescription = "Quota Logo",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(44.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                Icon(
+                    painter = androidx.compose.ui.res.painterResource(id = dev.seyone.quotatracker.R.drawable.logo),
+                    contentDescription = "Quota Logo",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(144.dp)
+                )
                 Text(
                     text = "Quota Tracker",
                     style = MaterialTheme.typography.headlineMedium,
@@ -135,11 +131,12 @@ fun AboutSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Created by seyone.dev",
+                    text = "Created by Seyone Gunasinghamv",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
             HorizontalDivider()
@@ -151,15 +148,6 @@ fun AboutSettingsScreen(
                 subtitle = "Alpha 1.4.0 (Jul 29, 2026)",
                 onClick = {
                     Toast.makeText(context, "Quota Tracker v1.4.0 Alpha Build", Toast.LENGTH_SHORT).show()
-                }
-            )
-
-            SettingsClickableItem(
-                icon = Icons.Outlined.SystemUpdate,
-                title = "Check for updates",
-                subtitle = "Check online release channel",
-                onClick = {
-                    Toast.makeText(context, "You are using the latest version (v1.0.0)", Toast.LENGTH_SHORT).show()
                 }
             )
 
@@ -189,13 +177,6 @@ fun AboutSettingsScreen(
                 title = "Privacy policy",
                 subtitle = "View privacy policy on GitHub",
                 onClick = { openUrl(context, privacyPolicyUrl) }
-            )
-
-            SettingsClickableItem(
-                icon = Icons.Outlined.Email,
-                title = "Developer Contact",
-                subtitle = devEmail,
-                onClick = { openEmail(context, devEmail) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
