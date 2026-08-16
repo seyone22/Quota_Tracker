@@ -38,8 +38,8 @@ import androidx.wear.compose.material3.Text
 import com.google.android.horologist.annotations.ExperimentalHorologistApi
 import com.google.android.horologist.compose.layout.ScalingLazyColumn
 import com.google.android.horologist.compose.layout.rememberResponsiveColumnState
+import dev.seyone.quotatracker.core.data.sync.WearQuotaItem
 import dev.seyone.quotatracker.wear.sync.WearDataClientManager
-import dev.seyone.quotatracker.wear.sync.WearQuotaItem
 import kotlinx.coroutines.launch
 
 class WearMainActivity : ComponentActivity() {

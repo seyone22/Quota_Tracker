@@ -14,5 +14,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Quota Tracker"
-include(":app")
+include(":core:domain")
+include(":core:data")
+include(":mobile")
 include(":wear")

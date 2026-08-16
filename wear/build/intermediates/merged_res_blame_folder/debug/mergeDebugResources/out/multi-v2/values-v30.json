@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "dev.seyone.quotatracker.wear-mergeDebugResources-71:/values-v30/values-v30.xml",
+            "outputFile": "dev.seyone.quotatracker.wear-mergeDebugResources-72:/values-v30/values-v30.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\5bb05a9f1e2dd1abcca3d45ea8266b57\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\7c6a635854ed72c47071bb4b45d9cdd0\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

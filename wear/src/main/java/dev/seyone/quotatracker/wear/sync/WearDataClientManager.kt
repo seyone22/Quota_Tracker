@@ -20,30 +20,15 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+import dev.seyone.quotatracker.core.data.sync.LogTimeMessagePayload
+import dev.seyone.quotatracker.core.data.sync.WearQuotaItem
+import dev.seyone.quotatracker.core.data.sync.WearQuotaStatePayload
+
 suspend fun <T> Task<T>.awaitTask(): T = suspendCancellableCoroutine { cont ->
     addOnSuccessListener { result -> cont.resume(result) }
     addOnFailureListener { exception -> cont.resumeWithException(exception) }
     addOnCanceledListener { cont.cancel() }
 }
-
-data class WearQuotaItem(
-    val id: Int,
-    val title: String,
-    val targetMinutes: Int,
-    val loggedMinutes: Int,
-    val isCompleted: Boolean,
-    val isPinned: Boolean
-)
-
-data class WearQuotaStatePayload(
-    val timestamp: Long,
-    val quotas: List<WearQuotaItem>
-)
-
-data class LogTimeMessagePayload(
-    val quotaId: Int,
-    val durationMinutes: Int
-)
 
 class WearDataClientManager(private val context: Context) : DataClient.OnDataChangedListener {
 

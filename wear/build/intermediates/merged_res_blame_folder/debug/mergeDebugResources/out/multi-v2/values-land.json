@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "dev.seyone.quotatracker.wear-mergeDebugResources-71:/values-land/values-land.xml",
+            "outputFile": "dev.seyone.quotatracker.wear-mergeDebugResources-72:/values-land/values-land.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\9e7f2c44846f43b9dc3b3430549d847e\\transformed\\appcompat-1.1.0\\res\\values-land\\values-land.xml",
+                    "source": "C:\\Users\\SGSey\\.gradle\\caches\\9.5.0\\transforms\\219eb38a03dd9351ca47340e1291f681\\transformed\\appcompat-1.1.0\\res\\values-land\\values-land.xml",
                     "from": {
                         "startLines": "2,3,4",
                         "startColumns": "4,4,4",

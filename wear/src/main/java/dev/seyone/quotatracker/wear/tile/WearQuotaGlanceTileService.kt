@@ -24,8 +24,8 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.wear.tiles.GlanceTileService
 import androidx.glance.wear.tiles.action.actionRunCallback
+import dev.seyone.quotatracker.core.data.sync.WearQuotaItem
 import dev.seyone.quotatracker.wear.sync.WearDataClientManager
-import dev.seyone.quotatracker.wear.sync.WearQuotaItem
 
 class WearQuotaGlanceTileService : GlanceTileService() {
 
